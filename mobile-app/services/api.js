@@ -42,7 +42,7 @@ api.interceptors.request.use(
     async (config) => {
         const token = await secureStorage.getItem('userToken');
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers.Authorization =`Bearer ${token}`;
         }
         return config;
     },
@@ -51,4 +51,5 @@ api.interceptors.request.use(
     }
 );
 
-export default api;
+export { API_URL };
+export default api

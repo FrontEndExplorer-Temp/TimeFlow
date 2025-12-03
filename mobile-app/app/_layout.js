@@ -25,7 +25,7 @@ import useThemeStore from '../store/themeStore';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function Layout() {
-    const { user, isLoading, loadUser } = useAuthStore();
+    const { user, isLoading, isAppLoading, loadUser } = useAuthStore();
     const { isDarkMode } = useThemeStore();
     const { initialize: initializeSync } = useSyncStore();
     const segments = useSegments();
@@ -38,7 +38,7 @@ export default function Layout() {
     }, []);
 
     useEffect(() => {
-        if (isLoading) return;
+        if (isAppLoading) return;
 
         const inAuthGroup = segments[0] === '(auth)';
         const isChoosingAvatar = segments[1] === 'choose-avatar';
@@ -56,9 +56,9 @@ export default function Layout() {
             // If authenticated user is in tabs but hasn't completed onboarding, redirect to avatar selection
             router.replace('/(auth)/choose-avatar');
         }
-    }, [user, segments, isLoading]);
+    }, [user, segments, isAppLoading]);
 
-    if (isLoading) return null;
+    if (isAppLoading) return null;
 
     return (
         <ErrorBoundary>

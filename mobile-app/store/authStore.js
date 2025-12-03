@@ -6,7 +6,8 @@ import { router } from 'expo-router';
 const useAuthStore = create((set) => ({
     user: null,
     token: null,
-    isLoading: true,
+    isLoading: false, // For actions like login/signup
+    isAppLoading: true, // For initial app load
     error: null,
     isAuthenticated: false,
 
@@ -16,13 +17,13 @@ const useAuthStore = create((set) => ({
             const userInfo = await secureStorage.getItem('userInfo');
 
             if (token && userInfo) {
-                set({ token, user: JSON.parse(userInfo), isLoading: false, isAuthenticated: true });
+                set({ token, user: JSON.parse(userInfo), isAppLoading: false, isAuthenticated: true });
             } else {
-                set({ token: null, user: null, isLoading: false, isAuthenticated: false });
+                set({ token: null, user: null, isAppLoading: false, isAuthenticated: false });
             }
         } catch (e) {
             console.error('Failed to load user', e);
-            set({ isLoading: false, isAuthenticated: false });
+            set({ isAppLoading: false, isAuthenticated: false });
         }
     },
 
