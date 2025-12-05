@@ -38,7 +38,7 @@ const getEmailTemplate = (title, content, buttonText, buttonUrl) => {
             </div>
             <div class="content">
                 ${content}
-                ${buttonText && buttonUrl ? <div style="text-align: center;"><a href="${buttonUrl}" class="button">${buttonText}</a></div> : ''}
+                ${buttonText && buttonUrl ? `<div style="text-align: center;"><a href="${buttonUrl}" class="button">${buttonText}</a></div>` : ''}
             </div>
             <div class="footer">
                 <p>&copy; ${new Date().getFullYear()} Life Management System. All rights reserved.</p>

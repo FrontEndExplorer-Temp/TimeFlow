@@ -4,7 +4,7 @@ import { Link, useRouter } from 'expo-router';
 import useAuthStore from '../../store/authStore';
 import useThemeStore from '../../store/themeStore';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../../services/api'; // To get baseURL if needed
+import api, { API_URL } from '../../services/api'; // To get baseURL if needed
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -27,10 +27,8 @@ export default function LoginScreen() {
     };
 
     const handleOAuthLogin = (provider) => {
-        // Assuming backend is reachable at localhost:5000 or configured IP
-        // For real device, use your machine's IP
-        const baseURL = 'http://localhost:5000';
-        Linking.openURL(`${baseURL}/api/users/auth/${provider}`);
+        // Use configured API URL
+        Linking.openURL(`${API_URL}/users/auth/${provider}`);
     };
 
     const themeStyles = {

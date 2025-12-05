@@ -35,8 +35,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/react": "~19.1.10",
     "babel-plugin-transform-import-meta": "^2.3.3",
-    "eas-cli": "^16.28.0"
+    "eas-cli": "^0.0.0",
+    "typescript": "~5.9.2"
   },
   "private": true
 }

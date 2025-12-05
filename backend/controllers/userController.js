@@ -16,7 +16,7 @@ const authUser = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
-        if (!user.isVerified) {
+        if (!user.isVerified && process.env.NODE_ENV !== 'development') {
             res.status(401);
             throw new Error('Please verify your email address.');
         }

@@ -5,9 +5,18 @@
     "skipLibCheck": true,
     "noEmit": true,
     "isolatedModules": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "lib": ["ES2020", "DOM"]
+    "lib": [
+      "ES2020",
+      "DOM"
+    ]
   },
-  "exclude": ["node_modules", "babel.config.js", "metro.config.js", "jest.config.js"]
+  "exclude": [
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ],
+  "extends": "expo/tsconfig.base"
 }

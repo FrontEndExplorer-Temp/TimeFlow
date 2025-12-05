@@ -33,6 +33,14 @@ router.post('/reset-password', resetPassword);
 // OAuth Routes
 router.get('/auth/google', (req, res, next) => {
     const strategy = req.query.platform === 'android' ? 'google-android' : 'google-web';
+    // Check if strategy is registered
+    if (!passport._strategies[strategy]) {
+        console.error(`Strategy '${strategy}' not found. Check if GOOGLE_CLIENT_ID/SECRET are set in .env`);
+        return res.status(503).json({
+            message: `Google Login is currently unavailable (${strategy} not configured). Please contact support.`
+        });
+    }
+
     passport.authenticate(strategy, { scope: ['profile', 'email'] })(req, res, next);
 });
 

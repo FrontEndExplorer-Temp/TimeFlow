@@ -4,6 +4,7 @@ import { Strategy as GitHubStrategy } from 'passport-github2';
 import User from '../models/userModel.js';
 
 // Web Strategy
+console.log('Google Web Strategy Config:', { clientId: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Missing', clientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Missing' });
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     passport.use(
         'google-web',

@@ -76,6 +76,53 @@ const useFinanceStore = create((set, get) => ({
         }
     },
 
+    fetchBudgets: async (month) => {
+        try {
+            const response = await api.get('/budgets', { params: { month } });
+            set({ budgets: response.data });
+        } catch (error) {
+            console.error('Failed to fetch budgets', error);
+        }
+    },
+
+    setBudget: async (budgetData) => {
+        set({ isLoading: true });
+        try {
+            const response = await api.post('/budgets', budgetData);
+            set((state) => {
+                // Check if budget for this category already exists and update it, or add new
+                const existingIndex = state.budgets.findIndex(b => b.category === budgetData.category);
+                let newBudgets;
+                if (existingIndex >= 0) {
+                    newBudgets = [...state.budgets];
+                    newBudgets[existingIndex] = response.data;
+                } else {
+                    newBudgets = [...state.budgets, response.data];
+                }
+                return { budgets: newBudgets, isLoading: false };
+            });
+            toast.success('Budget saved');
+            return true;
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            toast.error('Failed to save budget');
+            return false;
+        }
+    },
+
+    deleteBudget: async (id) => {
+        try {
+            set((state) => ({
+                budgets: state.budgets.filter((b) => b._id !== id)
+            }));
+            await api.delete(`/budgets/${id}`);
+            toast.success('Budget deleted');
+        } catch (error) {
+            console.error('Delete budget failed', error);
+            toast.error('Failed to delete budget');
+        }
+    },
+
     reset: () => set({ transactions: [], budgets: [], monthlyStats: null, isLoading: false, error: null }),
 }));
 
