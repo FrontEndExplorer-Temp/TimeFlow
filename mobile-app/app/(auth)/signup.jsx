@@ -35,7 +35,8 @@ export default function SignupScreen() {
             await register(name, email, password, gender);
             router.replace(`/(auth)/verify-email?email=${email}`);
         } catch (error) {
-            Alert.alert('Signup Failed', error.response?.data?.message || 'Something went wrong');
+            const errorMsg = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
+            Alert.alert('Signup Failed', errorMsg);
         }
     };
 
@@ -91,6 +92,7 @@ export default function SignupScreen() {
                         name="male"
                         size={24}
                         color={gender === 'male' ? '#4A90E2' : (isDarkMode ? '#888' : '#999')}
+                        style={styles.genderIcon}
                     />
                     <Text style={[
                         styles.genderText,
@@ -112,6 +114,7 @@ export default function SignupScreen() {
                         name="female"
                         size={24}
                         color={gender === 'female' ? '#FF69B4' : (isDarkMode ? '#888' : '#999')}
+                        style={styles.genderIcon}
                     />
                     <Text style={[
                         styles.genderText,
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
     genderContainer: {
         flexDirection: 'row',
         marginBottom: 16,
-        gap: 12,
+        justifyContent: 'space-between',
     },
     genderButton: {
         flex: 1,
@@ -226,7 +229,9 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 12,
         borderWidth: 2,
-        gap: 8,
+    },
+    genderIcon: {
+        marginRight: 8,
     },
     genderButtonActive: {
         borderColor: '#4A90E2',

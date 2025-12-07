@@ -134,12 +134,12 @@ const styles = StyleSheet.create({
     badges: {
         flexDirection: 'row',
         marginTop: 5,
-        gap: 5,
     },
     adminBadge: {
         backgroundColor: '#FF9500',
         paddingHorizontal: 8,
         paddingVertical: 2,
+        marginRight: 5,
         borderRadius: 4,
     },
     verifiedBadge: {

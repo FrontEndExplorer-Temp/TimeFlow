@@ -172,13 +172,13 @@ const styles = StyleSheet.create({
     },
     actions: {
         flexDirection: 'row',
-        gap: 10,
     },
     primaryButton: {
         flex: 1,
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
+        marginRight: 10,
     },
     secondaryButton: {
         flex: 1,

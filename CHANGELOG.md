@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-12-07
+
+### Added
+- **Authentication & Security**
+  - Hashed verification and reset tokens for enhanced security
+  - Token validation endpoint (`GET /api/users/validate-reset/:token`) for pre-checking token validity
+  - Rate limiting on forgot-password endpoint (5 requests per 15 minutes per IP)
+  - SendGrid email API fallback with conditional sending strategy
+
+- **User Experience - Mobile**
+  - Improved error messages in login/signup screens (now shows actual error details instead of generic "Something went wrong")
+  - Simplified login UI by removing redundant "Have a reset token?" link
+  - Deep link support for password reset emails with `MOBILE_APP_SCHEME` environment variable
+  - "Open in App" button in reset emails when mobile scheme is configured
+
+- **Notifications**
+  - Fixed notification initialization to prevent duplicate scheduling on app reload
+  - Added `hasInitialized` flag to notification store for session-based initialization
+  - Notifications now scheduled for specific times (8 PM daily summary, Monday 7 PM weekly review)
+  - Notifications only schedule when app is not in use (background notifications)
+
+- **React Native Compatibility**
+  - Replaced all unsupported CSS `gap` properties with explicit `marginRight`/`marginBottom` for broader device compatibility
+  - Fixed spacing in gender selector, color picker, tags, and other list components
+
+### Improved
+- **Backend Email Service**
+  - Transporter verification on startup to catch configuration issues early
+  - Configurable SMTP timeouts and TLS handling via environment variables
+  - Better structured error logging for email failures
+  - Production-level CORS with dynamic origin validation
+
+### Fixed
+- **Password Reset Flow**
+  - Reset token expiry increased to 15 minutes
+  - Raw tokens sent via email, hashed tokens stored in database
+  - Verification email now includes both web link and deep-link option
+
 ## [1.2.0] - 2025-11-25
 
 ### Added
@@ -97,29 +135,3 @@ All notable changes to this project will be documented in this file.
 - Contributing guidelines
 - Code comments and inline documentation
 
----
-
-## Future Releases
-
-### [1.2.0] - Planned
-- Push notifications for reminders
-- Calendar integration
-- Biometric authentication
-- Data export (PDF/CSV)
-- Advanced analytics and charts
-- Team collaboration features
-
-### [1.2.0] - Planned
-- Data export (PDF/CSV)
-- Advanced analytics and charts
-- Team collaboration features
-- Web dashboard
-
----
-
-## Version Format
-
-This project follows [Semantic Versioning](https://semver.org/):
-- MAJOR version for incompatible API changes
-- MINOR version for new functionality in a backwards compatible manner
-- PATCH version for backwards compatible bug fixes

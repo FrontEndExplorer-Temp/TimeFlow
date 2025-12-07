@@ -698,14 +698,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     tabBarContent: {
-        gap: 10,
+        flexDirection: 'row',
     },
     filterTab: {
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 20,
         backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    },
+        marginRight: 10,
     filterTabText: {
         fontSize: 13,
         fontWeight: '600',
@@ -732,7 +732,6 @@ const styles = StyleSheet.create({
     taskTitleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
         marginBottom: 4,
         flexWrap: 'wrap',
     },
@@ -740,6 +739,7 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '700',
         flexShrink: 1,
+        marginRight: 8,
     },
     taskDescription: {
         fontSize: 14,
@@ -770,12 +770,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         marginTop: 12,
-        gap: 6,
     },
     tagChip: {
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
+        marginRight: 6,
+        marginBottom: 6,
     },
     tagText: {
         fontSize: 11,
@@ -834,7 +835,6 @@ const styles = StyleSheet.create({
     statusContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
         marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
@@ -842,6 +842,8 @@ const styles = StyleSheet.create({
     },
     statusChip: {
         paddingVertical: 6,
+        marginRight: 8,
+        marginBottom: 8,
         paddingHorizontal: 12,
         borderRadius: 12,
         backgroundColor: '#f5f5f5',
@@ -962,7 +964,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         marginBottom: 20,
-        gap: 8,
     },
     tagChipEdit: {
         flexDirection: 'row',
@@ -970,7 +971,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 12,
-        gap: 6,
+        marginRight: 8,
+        marginBottom: 8,
+    },
     },
     tagTextEdit: {
         fontSize: 13,
@@ -1000,11 +1003,11 @@ const styles = StyleSheet.create({
     },
     modalButtons: {
         flexDirection: 'row',
-        gap: 12,
         marginTop: 12,
     },
     cancelButton: {
         flex: 1,
+        marginRight: 12,
         padding: 16,
         borderRadius: 14,
         alignItems: 'center',

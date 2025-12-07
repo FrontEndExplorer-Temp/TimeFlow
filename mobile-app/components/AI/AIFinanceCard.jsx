@@ -75,11 +75,11 @@ const styles = StyleSheet.create({
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
     },
     title: {
         fontSize: 16,
         fontWeight: 'bold',
+        marginLeft: 8,
     },
     link: {
         fontSize: 14,

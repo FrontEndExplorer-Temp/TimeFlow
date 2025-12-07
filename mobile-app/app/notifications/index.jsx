@@ -272,10 +272,10 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 12,
         borderWidth: 1,
-        gap: 12,
     },
     warningText: {
         flex: 1,
+        marginLeft: 12,
     },
     warningTitle: {
         fontSize: 15,
@@ -327,12 +327,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
-        gap: 12,
     },
     iconContainer: {
         width: 44,
         height: 44,
         borderRadius: 22,
+        marginRight: 12,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -355,11 +355,14 @@ const styles = StyleSheet.create({
         marginTop: 24,
         padding: 16,
         borderRadius: 12,
-        gap: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     testButtonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+        marginLeft: 8,
     },
 });

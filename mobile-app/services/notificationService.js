@@ -201,6 +201,7 @@ class NotificationService {
     }
 
     // AI-powered smart notification scheduling
+    // Notifications are scheduled for when the app is likely not in use
     async scheduleSmartNotification(type, data) {
         try {
             let trigger;
@@ -208,6 +209,7 @@ class NotificationService {
 
             switch (type) {
                 case 'daily-summary':
+                    // Schedule for 8 PM (20:00) daily - a typical time when users check their app
                     trigger = {
                         hour: 20,
                         minute: 0,
@@ -221,6 +223,7 @@ class NotificationService {
                     break;
 
                 case 'weekly-review':
+                    // Schedule for Monday 7 PM - a good time to reflect on the week
                     trigger = {
                         weekday: 1,
                         hour: 19,
@@ -235,6 +238,7 @@ class NotificationService {
                     break;
 
                 case 'break-reminder':
+                    // Pomodoro-style break reminder
                     trigger = {
                         seconds: (data.minutes || 25) * 60,
                     };

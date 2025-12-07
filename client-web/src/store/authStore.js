@@ -66,6 +66,30 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    forgotPassword: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await api.post('/users/forgot-password', { email });
+            set({ isLoading: false });
+            return res.data;
+        } catch (error) {
+            set({ isLoading: false, error: error.response?.data?.message || 'Request failed' });
+            throw error;
+        }
+    },
+
+    resetPassword: async (token, password) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await api.post('/users/reset-password', { token, password });
+            set({ isLoading: false });
+            return res.data;
+        } catch (error) {
+            set({ isLoading: false, error: error.response?.data?.message || 'Reset failed' });
+            throw error;
+        }
+    },
+
     logout: () => {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userInfo');

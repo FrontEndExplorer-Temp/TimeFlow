@@ -233,15 +233,14 @@ const styles = StyleSheet.create({
     summaryGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
         justifyContent: 'space-between',
     },
     summaryItem: {
-        width: isSmallScreen ? '47%' : '48%', // Responsive width
+        width: isSmallScreen ? '47%' : '48%',
         alignItems: 'center',
         padding: 16,
         borderRadius: 16,
-        marginBottom: 0, // Handled by gap
+        marginBottom: 12,
     },
     summaryValue: {
         fontSize: 24,
@@ -285,7 +284,6 @@ const styles = StyleSheet.create({
     },
     controls: {
         flexDirection: 'row',
-        gap: 16,
         width: '100%',
         justifyContent: 'center',
     },
@@ -295,6 +293,7 @@ const styles = StyleSheet.create({
         borderRadius: 32,
         width: '100%',
         alignItems: 'center',
+        marginRight: 16,
         shadowColor: "#000",
         shadowOffset: {
             width: 0,

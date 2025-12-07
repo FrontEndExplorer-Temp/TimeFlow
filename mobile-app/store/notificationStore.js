@@ -26,9 +26,15 @@ const useNotificationStore = create((set, get) => ({
     breakReminderInterval: 25,
     scheduledNotifications: {},
     permissionsGranted: false,
+    hasInitialized: false,
 
     // Initialize
     initialize: async () => {
+        // Only initialize once per app session
+        if (get().hasInitialized) {
+            return;
+        }
+        set({ hasInitialized: true });
         // Skip notification initialization on web
         if (Platform.OS === 'web') {
             console.log('Notifications not supported on web');
@@ -65,8 +71,15 @@ const useNotificationStore = create((set, get) => ({
 
             set({ scheduledNotifications: scheduledMap });
 
-            if (get().dailySummary) await get().scheduleDailySummary();
-            if (get().weeklyReview) await get().scheduleWeeklyReview();
+            // Only schedule if enabled and not already scheduled
+            if (get().isEnabled) {
+                if (get().dailySummary && !scheduledMap.dailySummary) {
+                    await get().scheduleDailySummary();
+                }
+                if (get().weeklyReview && !scheduledMap.weeklyReview) {
+                    await get().scheduleWeeklyReview();
+                }
+            }
         } catch (error) {
             console.error('Error initializing notifications:', error);
         }

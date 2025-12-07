@@ -22,7 +22,8 @@ export default function LoginScreen() {
         try {
             await login(email, password);
         } catch (error) {
-            Alert.alert('Login Failed', error.response?.data?.message || 'Something went wrong');
+            const errorMsg = error.response?.data?.message || error.message || 'Login failed. Please try again.';
+            Alert.alert('Login Failed', errorMsg);
         }
     };
 
@@ -75,13 +76,6 @@ export default function LoginScreen() {
                 style={styles.forgotPassword}
             >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                onPress={() => router.push('/(auth)/reset-password')}
-                style={styles.resetTokenLink}
-            >
-                <Text style={styles.resetTokenText}>Have a reset token?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={isLoading}>
@@ -176,8 +170,8 @@ const styles = StyleSheet.create({
     },
     resetTokenLink: {
         alignSelf: 'flex-end',
-        marginBottom: 20,
-        marginTop: -15,
+        marginBottom: 10,
+        marginTop: 0,
     },
     resetTokenText: {
         color: '#666',

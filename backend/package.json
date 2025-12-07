@@ -1,6 +1,6 @@
 {
     "name": "life-management-backend",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "description": "Backend for Life Management System",
     "main": "server.js",
     "type": "module",

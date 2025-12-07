@@ -376,11 +376,11 @@ const styles = StyleSheet.create({
     },
     noteActions: {
         flexDirection: 'row',
-        gap: 8,
         alignItems: 'center',
     },
     pinIcon: {
         fontSize: 14,
+        marginRight: 8,
     },
     deleteText: {
         fontWeight: 'bold',
@@ -460,7 +460,6 @@ const styles = StyleSheet.create({
     colorPicker: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
         marginBottom: 24,
     },
     colorOption: {
@@ -468,6 +467,8 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 22,
         borderWidth: 1,
+        marginRight: 12,
+        marginBottom: 12,
         borderColor: 'rgba(0,0,0,0.1)',
     },
     modalButtons: {
@@ -495,13 +496,14 @@ const styles = StyleSheet.create({
     tagsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginTop: 'auto', // Push to bottom if space allows
-        gap: 4,
+        marginTop: 'auto',
     },
     tagChip: {
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
+        marginRight: 4,
+        marginBottom: 4,
     },
     tagText: {
         fontSize: 11,
@@ -538,7 +540,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         marginBottom: 20,
-        gap: 8,
     },
     tagChipEdit: {
         flexDirection: 'row',
@@ -546,11 +547,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
-        gap: 6,
+        marginRight: 8,
+        marginBottom: 8,
     },
     tagTextEdit: {
         fontSize: 13,
         color: '#fff',
+        marginRight: 6,
         fontWeight: '600',
     },
     removeTagText: {

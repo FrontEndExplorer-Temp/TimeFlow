@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     calendarHeaderLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        marginRight: 10,
     },
     calendarHeaderTitle: {
         fontSize: 17,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     dataCardLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        marginRight: 12,
     },
     dataCardIcon: {
         width: 40,
