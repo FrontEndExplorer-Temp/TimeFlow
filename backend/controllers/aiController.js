@@ -40,7 +40,7 @@ const generateDailyPlan = asyncHandler(async (req, res) => {
 
     // Accept optional `model` (string) or `models` (array) in the request body
     const models = req.body?.models || (req.body?.model ? [req.body.model] : undefined);
-    const aiResult = await generateAIResponse(prompt, models ? { models } : {});
+    const aiResult = await generateAIResponse(prompt, models ? { models } : {}, req.user._id);
 
     // Backwards compatible: if a single-model call returns a string, use it directly.
     const planText = typeof aiResult === 'string' ? aiResult : (aiResult.final || (aiResult.results && aiResult.results[0]?.text) || '');
@@ -74,7 +74,7 @@ const getTaskSuggestions = asyncHandler(async (req, res) => {
 
     const prompt = createTaskSuggestionsPrompt(tasks.slice(0, 15));
     const models = req.body?.models || (req.body?.model ? [req.body.model] : undefined);
-    const aiResult = await generateAIResponse(prompt, models ? { models } : {});
+    const aiResult = await generateAIResponse(prompt, models ? { models } : {}, req.user._id);
     const suggestionsText = typeof aiResult === 'string' ? aiResult : (aiResult.final || (aiResult.results && aiResult.results[0]?.text) || '');
 
     const responsePayload = {
@@ -102,7 +102,7 @@ const getHabitInsights = asyncHandler(async (req, res) => {
 
     const prompt = createHabitInsightsPrompt(habits);
     const models = req.body?.models || (req.body?.model ? [req.body.model] : undefined);
-    const aiResult = await generateAIResponse(prompt, models ? { models } : {});
+    const aiResult = await generateAIResponse(prompt, models ? { models } : {}, req.user._id);
     const insightsText = typeof aiResult === 'string' ? aiResult : (aiResult.final || (aiResult.results && aiResult.results[0]?.text) || '');
 
     const responsePayload = {
@@ -130,8 +130,9 @@ export const getTaskBreakdown = asyncHandler(async (req, res) => {
     }
 
     const prompt = createTaskBreakdownPrompt(title, description);
-    const models = req.body?.models || (req.body?.model ? [req.body.model] : undefined);
-    const aiResult = await generateAIResponse(prompt, models ? { models } : {});
+    const models = req.body?.models || (req.body?.model ? [req.body.model] : (req.query.model ? [req.query.model] : undefined));
+    console.log(`🧠 AI Breakdown Request for "${title}" using models:`, models || 'DEFAULT');
+    const aiResult = await generateAIResponse(prompt, models ? { models } : {}, req.user._id);
 
     let subtasks = [];
     const resultText = typeof aiResult === 'string' ? aiResult : (aiResult.final || (aiResult.results && aiResult.results[0]?.text) || '');
@@ -179,7 +180,7 @@ export const getFinanceInsights = asyncHandler(async (req, res) => {
 
     const prompt = createFinanceInsightsPrompt(transactions);
     const models = req.body?.models || (req.body?.model ? [req.body.model] : undefined);
-    const aiResult = await generateAIResponse(prompt, models ? { models } : {});
+    const aiResult = await generateAIResponse(prompt, models ? { models } : {}, req.user._id);
     const insightsText = typeof aiResult === 'string' ? aiResult : (aiResult.final || (aiResult.results && aiResult.results[0]?.text) || '');
 
     const responsePayload = {
@@ -206,7 +207,7 @@ export const summarizeNote = asyncHandler(async (req, res) => {
 
     const prompt = createNoteSummaryPrompt(content);
     const models = req.body?.models || (req.body?.model ? [req.body.model] : undefined);
-    const aiResult = await generateAIResponse(prompt, models ? { models } : {});
+    const aiResult = await generateAIResponse(prompt, models ? { models } : {}, req.user._id);
     const summaryText = typeof aiResult === 'string' ? aiResult : (aiResult.final || (aiResult.results && aiResult.results[0]?.text) || '');
 
     const responsePayload = {

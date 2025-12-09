@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, S
 import useThemeStore from '../../store/themeStore';
 import useTaskStore from '../../store/taskStore';
 import CalendarView from '../../components/CalendarView';
-import { isSameDay, parseISO } from 'date-fns';
+import dayjs from 'dayjs';
 import AIBreakdownModal from '../../components/AI/AIBreakdownModal';
+import TaskStats from '../../components/TaskStats';
 
 const PRIORITY_COLORS = {
     Low: '#34C759',
@@ -439,6 +440,13 @@ export default function TasksScreen() {
                 </View>
             )}
 
+            {/* Task Stats (Only in List Mode) */}
+            {viewMode === 'list' && !isLoading && tasks.length > 0 && (
+                <View style={styles.statsContainer}>
+                    <TaskStats tasks={tasks} />
+                </View>
+            )}
+
             {isLoading && tasks.length === 0 ? (
                 <View style={styles.listContent}>
                     <TaskSkeleton />
@@ -700,6 +708,10 @@ const styles = StyleSheet.create({
     },
     tabBarContent: {
         flexDirection: 'row',
+    },
+    statsContainer: {
+        paddingHorizontal: 16,
+        paddingTop: 8,
     },
     filterTab: {
         paddingVertical: 8,

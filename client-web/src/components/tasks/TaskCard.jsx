@@ -72,21 +72,36 @@ const TaskCard = ({ task, onEdit }) => {
                 </div>
             )}
 
-            {/* Subtask Progress */}
-            {totalSubtasks > 0 && (
-                <div className="mb-3">
-                    <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        <span className="flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" />
-                            {completedSubtasks}/{totalSubtasks} subtasks
-                        </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+            {/* Subtasks List */}
+            {task.subtasks && task.subtasks.length > 0 && (
+                <div className="mb-3 space-y-1">
+                    {task.subtasks.map((subtask, index) => (
                         <div
-                            className="h-1 rounded-full bg-blue-500 transition-all"
-                            style={{ width: `${totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0}%` }}
-                        />
-                    </div>
+                            key={index}
+                            className="flex items-center gap-2 text-xs group/subtask"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubtaskToggle(index);
+                            }}
+                        >
+                            <div className={cn(
+                                "w-3.5 h-3.5 border rounded flex items-center justify-center cursor-pointer transition-colors",
+                                subtask.completed
+                                    ? "bg-blue-500 border-blue-500 text-white"
+                                    : "border-gray-300 dark:border-gray-500 hover:border-blue-500"
+                            )}>
+                                {subtask.completed && <CheckCircle2 className="w-2.5 h-2.5" />}
+                            </div>
+                            <span className={cn(
+                                "flex-1 cursor-pointer transition-colors",
+                                subtask.completed
+                                    ? "text-gray-400 dark:text-gray-500 line-through"
+                                    : "text-gray-700 dark:text-gray-200"
+                            )}>
+                                {subtask.title}
+                            </span>
+                        </div>
+                    ))}
                 </div>
             )}
 

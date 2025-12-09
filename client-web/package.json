@@ -20,7 +20,6 @@
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.67.0",
     "react-hot-toast": "^2.6.0",
-    "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
     "recharts": "^3.5.1",
@@ -31,7 +30,6 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.5",
-    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

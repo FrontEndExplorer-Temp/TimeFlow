@@ -23,9 +23,6 @@ const jobSchema = mongoose.Schema(
         location: {
             type: String,
         },
-        salary: {
-            type: String,
-        },
         link: {
             type: String,
         },
@@ -35,6 +32,9 @@ const jobSchema = mongoose.Schema(
         notes: {
             type: String,
         },
+        skills: [{
+            type: String,
+        }],
     },
     {
         timestamps: true,

@@ -9,8 +9,10 @@ import {
     Clock,
     Briefcase,
     Bot,
-    Settings,
-    LogOut
+    User,
+    LogOut,
+    Sun,
+    Moon
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
@@ -28,7 +30,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { icon: Clock, label: 'Timer', path: '/timer' },
         { icon: Briefcase, label: 'Jobs', path: '/jobs' },
         { icon: Bot, label: 'AI Assistant', path: '/ai' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: User, label: 'Profile', path: '/profile' },
     ];
 
     return (
@@ -77,12 +79,12 @@ const Sidebar = ({ isOpen, onClose }) => {
                     >
                         {useThemeStore((state) => state.theme) === 'dark' ? (
                             <>
-                                <Settings className="w-5 h-5 mr-3" />
+                                <Sun className="w-5 h-5 mr-3" />
                                 Light Mode
                             </>
                         ) : (
                             <>
-                                <Settings className="w-5 h-5 mr-3" />
+                                <Moon className="w-5 h-5 mr-3" />
                                 Dark Mode
                             </>
                         )}

@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-    format,
-    addMonths,
-    subMonths,
-    startOfMonth,
-    endOfMonth,
-    startOfWeek,
-    endOfWeek,
-    eachDayOfInterval,
-    isSameMonth,
-    isSameDay,
-    isToday,
-    parseISO,
-    addWeeks,
-    subWeeks
-} from 'date-fns';
+import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import weekday from 'dayjs/plugin/weekday';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(weekday);
 import useThemeStore from '../store/themeStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -54,9 +46,9 @@ export default function CalendarView({ tasks, selectedDate, onSelectDate }) {
 
     const nextPeriod = () => {
         if (isExpanded) {
-            setCurrentMonth(addMonths(currentMonth, 1));
+            setCurrentMonth(dayjs(currentMonth).add(1, 'month').toDate());
         } else {
-            const nextWeek = addWeeks(currentMonth, 1);
+            const nextWeek = dayjs(currentMonth).add(1, 'week').toDate();
             setCurrentMonth(nextWeek);
             onSelectDate(nextWeek); // Select same day next week
         }
@@ -64,9 +56,9 @@ export default function CalendarView({ tasks, selectedDate, onSelectDate }) {
 
     const prevPeriod = () => {
         if (isExpanded) {
-            setCurrentMonth(subMonths(currentMonth, 1));
+            setCurrentMonth(dayjs(currentMonth).subtract(1, 'month').toDate());
         } else {
-            const prevWeek = subWeeks(currentMonth, 1);
+            const prevWeek = dayjs(currentMonth).subtract(1, 'week').toDate();
             setCurrentMonth(prevWeek);
             onSelectDate(prevWeek); // Select same day prev week
         }
@@ -78,7 +70,7 @@ export default function CalendarView({ tasks, selectedDate, onSelectDate }) {
                 <Ionicons name="chevron-back" size={24} color={themeStyles.text.color} />
             </TouchableOpacity>
             <Text style={[styles.monthTitle, themeStyles.text]}>
-                {format(currentMonth, 'MMMM yyyy')}
+                {dayjs(currentMonth).format('MMMM YYYY')}
             </Text>
             <TouchableOpacity onPress={nextPeriod} style={styles.arrowButton}>
                 <Ionicons name="chevron-forward" size={24} color={themeStyles.text.color} />
@@ -104,39 +96,40 @@ export default function CalendarView({ tasks, selectedDate, onSelectDate }) {
 
         if (isExpanded) {
             // Month View
-            const monthStart = startOfMonth(currentMonth);
-            const monthEnd = endOfMonth(monthStart);
-            startDate = startOfWeek(monthStart);
-            endDate = endOfWeek(monthEnd);
+            const monthStart = dayjs(currentMonth).startOf('month');
+            const monthEnd = monthStart.endOf('month');
+            startDate = monthStart.startOf('week').toDate();
+            endDate = monthEnd.endOf('week').toDate();
         } else {
             // Week View
-            startDate = startOfWeek(currentMonth);
-            endDate = endOfWeek(currentMonth);
+            startDate = dayjs(currentMonth).startOf('week').toDate();
+            endDate = dayjs(currentMonth).endOf('week').toDate();
         }
 
-        const dateFormat = 'd';
         const rows = [];
         let days = [];
-        let day = startDate;
         let formattedDate = '';
 
-        const daysInInterval = eachDayOfInterval({
-            start: startDate,
-            end: endDate,
-        });
+        // Generate array of days
+        const daysInInterval = [];
+        let currentDay = dayjs(startDate);
+        while (currentDay.isSameOrBefore(dayjs(endDate), 'day')) {
+            daysInInterval.push(currentDay.toDate());
+            currentDay = currentDay.add(1, 'day');
+        }
 
         daysInInterval.forEach((dayItem) => {
-            formattedDate = format(dayItem, dateFormat);
+            formattedDate = dayjs(dayItem).format('D');
 
             // Check if this day has tasks
             const hasTasks = tasks.some(task => {
                 if (!task.dueDate) return false;
-                return isSameDay(parseISO(task.dueDate), dayItem);
+                return dayjs(task.dueDate).isSame(dayjs(dayItem), 'day');
             });
 
-            const isSelected = isSameDay(dayItem, selectedDate);
-            const isCurrentMonth = isSameMonth(dayItem, currentMonth);
-            const isDayToday = isToday(dayItem);
+            const isSelected = dayjs(dayItem).isSame(dayjs(selectedDate), 'day');
+            const isCurrentMonth = dayjs(dayItem).isSame(dayjs(currentMonth), 'month');
+            const isDayToday = dayjs(dayItem).isSame(dayjs(), 'day');
 
             days.push(
                 <TouchableOpacity

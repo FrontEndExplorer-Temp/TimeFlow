@@ -22,7 +22,25 @@ export default function LoginScreen() {
         try {
             await login(email, password);
         } catch (error) {
-            const errorMsg = error.response?.data?.message || error.message || 'Login failed. Please try again.';
+            let errorMsg = 'Login failed. Please try again.';
+
+            if (!error.response) {
+                // Network error - no response from server
+                errorMsg = 'Unable to connect to server. Please check your internet connection and try again.';
+            } else if (error.response.status === 401) {
+                errorMsg = 'Invalid email or password. Please check your credentials and try again.';
+            } else if (error.response.status === 403) {
+                errorMsg = 'Please verify your email address before logging in. Check your inbox for the verification link.';
+            } else if (error.response.status === 404) {
+                errorMsg = 'Account not found. Please check your email or sign up for a new account.';
+            } else if (error.response.status === 500 || error.response.status === 502 || error.response.status === 503) {
+                errorMsg = 'Server is currently unavailable. Please try again in a few moments.';
+            } else if (error.response?.data?.message) {
+                errorMsg = error.response.data.message;
+            } else if (error.message?.includes('timeout')) {
+                errorMsg = 'Request timed out. Please check your internet connection and try again.';
+            }
+
             Alert.alert('Login Failed', errorMsg);
         }
     };

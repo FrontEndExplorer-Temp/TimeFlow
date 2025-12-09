@@ -67,6 +67,40 @@ const useFinanceStore = create((set, get) => ({
         }
     },
 
+    updateTransaction: async (id, transactionData) => {
+        set({ isLoading: true });
+        try {
+            const response = await api.put(`/transactions/${id}`, transactionData);
+
+            set((state) => ({
+                transactions: state.transactions.map((t) => (t._id === id ? response.data : t)),
+                isLoading: false
+            }));
+
+            // Refresh stats
+            const date = new Date(transactionData.date);
+            const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            get().fetchMonthlyStats(monthStr);
+
+            toast.success('Transaction updated');
+            return true;
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            toast.error('Failed to update transaction');
+            return false;
+        }
+    },
+
+    fetchInsights: async () => {
+        try {
+            const response = await api.post('/ai/finance-insights');
+            return response.data.insights;
+        } catch (error) {
+            console.error('Failed to fetch AI insights', error);
+            return null;
+        }
+    },
+
     fetchMonthlyStats: async (month) => {
         try {
             const response = await api.get(`/transactions/stats/${month}`);

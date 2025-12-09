@@ -35,14 +35,27 @@ export default function ChooseAvatarScreen() {
 
         setIsLoading(true);
         try {
-            await updateProfile({
+            const success = await updateProfile({
                 profilePicture: selectedAvatar,
                 onboardingCompleted: true
             });
-            router.replace('/(tabs)');
+
+            if (success) {
+                router.replace('/(tabs)');
+            } else {
+                // Fallback: Backend failed, save locally so user can proceed
+                const { completeOnboardingLocally } = useAuthStore.getState();
+                await completeOnboardingLocally({ profilePicture: selectedAvatar });
+
+                // Optional: Show toast or small alert that we are in offline mode? 
+                // For now, just let them in to avoid friction.
+                router.replace('/(tabs)');
+            }
         } catch (error) {
             console.error('Failed to update avatar:', error);
-            // Continue anyway
+            // Fallback
+            const { completeOnboardingLocally } = useAuthStore.getState();
+            await completeOnboardingLocally({ profilePicture: selectedAvatar });
             router.replace('/(tabs)');
         } finally {
             setIsLoading(false);
@@ -51,11 +64,22 @@ export default function ChooseAvatarScreen() {
 
     const handleSkip = async () => {
         try {
-            await updateProfile({ onboardingCompleted: true });
+            const success = await updateProfile({ onboardingCompleted: true });
+            if (success) {
+                router.replace('/(tabs)');
+            } else {
+                // Fallback: If network fails, allow local bypass to not block user
+                const { completeOnboardingLocally } = useAuthStore.getState();
+                await completeOnboardingLocally();
+                router.replace('/(tabs)');
+            }
         } catch (error) {
             console.error('Failed to skip avatar:', error);
+            // Fallback
+            const { completeOnboardingLocally } = useAuthStore.getState();
+            await completeOnboardingLocally();
+            router.replace('/(tabs)');
         }
-        router.replace('/(tabs)');
     };
 
     const styles = getStyles(theme, isDarkMode);

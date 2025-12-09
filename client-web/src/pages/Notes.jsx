@@ -101,6 +101,30 @@ const NoteCard = ({ note, onClick, onDelete, onPin }) => {
     );
 }
 
+const NoteSkeleton = () => (
+    <div className="rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-64 animate-pulse bg-white dark:bg-gray-800">
+        <div className="flex justify-between items-start mb-4">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+            <div className="flex gap-2">
+                <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+            </div>
+        </div>
+        <div className="space-y-2 flex-1">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+        </div>
+        <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+            <div className="flex gap-1">
+                <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+            </div>
+        </div>
+    </div>
+);
+
 const Notes = () => {
     const { notes, fetchNotes, addNote, updateNote, deleteNote, summarizeNote, isLoading } = useNoteStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -197,8 +221,6 @@ const Notes = () => {
     const isDarkMode = theme === 'dark';
     const currentColors = isDarkMode ? DARK_COLORS : COLORS;
 
-    // ... (rest of logic)
-
     return (
         <div className="space-y-6">
 
@@ -228,7 +250,11 @@ const Notes = () => {
 
             {/* Notes Grid */}
             {isLoading && !notes.length ? (
-                <div className="text-center py-12">Loading notes...</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[...Array(8)].map((_, i) => (
+                        <NoteSkeleton key={i} />
+                    ))}
+                </div>
             ) : filteredNotes.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                     <p className="text-gray-500 dark:text-gray-400">No notes found. Create one to get started!</p>

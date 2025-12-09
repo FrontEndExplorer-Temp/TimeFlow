@@ -56,7 +56,7 @@ const JobCard = ({ job, onEdit, onDelete, onPrep, onStatusChange }) => {
             {/* Skills Pills */}
             {job.skills && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                    {job.skills.split(',').slice(0, 4).map((skill, i) => (
+                    {(Array.isArray(job.skills) ? job.skills : job.skills.split(',')).slice(0, 4).map((skill, i) => (
                         <span
                             key={i}
                             className="px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -64,8 +64,10 @@ const JobCard = ({ job, onEdit, onDelete, onPrep, onStatusChange }) => {
                             {skill.trim()}
                         </span>
                     ))}
-                    {job.skills.split(',').length > 4 && (
-                        <span className="text-xs text-gray-400">+{job.skills.split(',').length - 4}</span>
+                    {(Array.isArray(job.skills) ? job.skills : job.skills.split(',')).length > 4 && (
+                        <span className="text-xs text-gray-400">
+                            +{(Array.isArray(job.skills) ? job.skills : job.skills.split(',')).length - 4}
+                        </span>
                     )}
                 </div>
             )}

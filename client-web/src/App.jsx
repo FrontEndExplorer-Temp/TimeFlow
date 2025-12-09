@@ -11,7 +11,7 @@ import Timer from './pages/Timer';
 import Habits from './pages/Habits';
 import Jobs from './pages/Jobs';
 import AI from './pages/AI';
-import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -62,7 +62,7 @@ function App() {
           <Route path="habits" element={<Habits />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="ai" element={<AI />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="profile" element={<Profile />} />
           {/* Add other feature routes here */}
         </Route>
       </Routes>

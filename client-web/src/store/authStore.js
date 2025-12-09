@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import safeStorage from '../utils/safeStorage';
 
 const useAuthStore = create((set) => ({
     user: null,
@@ -10,8 +11,8 @@ const useAuthStore = create((set) => ({
 
     loadUser: async () => {
         try {
-            const token = localStorage.getItem('userToken');
-            const userInfo = localStorage.getItem('userInfo');
+            const token = safeStorage.getItem('userToken');
+            const userInfo = safeStorage.getItem('userInfo');
 
             if (token && userInfo) {
                 // Set the token in the API headers for future requests
@@ -32,8 +33,8 @@ const useAuthStore = create((set) => ({
             const response = await api.post('/users/login', { email, password });
             const { token, ...user } = response.data;
 
-            localStorage.setItem('userToken', token);
-            localStorage.setItem('userInfo', JSON.stringify(user));
+            safeStorage.setItem('userToken', token);
+            safeStorage.setItem('userInfo', JSON.stringify(user));
 
             // Set the token in the API headers
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -66,6 +67,31 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    updateProfile: async (userData) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.put('/users/profile', userData);
+            const { token, ...user } = response.data;
+
+            // Update local storage
+            safeStorage.setItem('userInfo', JSON.stringify(user));
+            // Token usually doesn't change on profile update, but if it does:
+            if (token) {
+                safeStorage.setItem('userToken', token);
+                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            }
+
+            set({ user, isLoading: false });
+            return true;
+        } catch (error) {
+            set({
+                isLoading: false,
+                error: error.response?.data?.message || 'Update failed'
+            });
+            throw error;
+        }
+    },
+
     forgotPassword: async (email) => {
         set({ isLoading: true, error: null });
         try {
@@ -91,8 +117,8 @@ const useAuthStore = create((set) => ({
     },
 
     logout: () => {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userInfo');
+        safeStorage.removeItem('userToken');
+        safeStorage.removeItem('userInfo');
         delete api.defaults.headers.common['Authorization'];
         set({ user: null, token: null, isAuthenticated: false, error: null });
     },

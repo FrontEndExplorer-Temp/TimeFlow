@@ -133,6 +133,32 @@ const HabitCard = ({ habit, onToggle, onEdit, onDelete }) => {
     );
 };
 
+const HabitSkeleton = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 flex flex-col h-full animate-pulse">
+        <div className="flex justify-between items-start mb-3">
+            <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            </div>
+            <div className="flex gap-1">
+                <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
+        </div>
+        <div className="flex items-center gap-2 mb-4">
+            <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+        </div>
+        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between">
+            {[...Array(7)].map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                    <div className="w-4 h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
 const Habits = () => {
     const { habits, fetchHabits, addHabit, updateHabit, toggleCompletion, deleteHabit, isLoading } = useHabitStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -212,7 +238,11 @@ const Habits = () => {
 
             {/* Habits List */}
             {isLoading && !habits.length ? (
-                <div className="text-center py-12">Loading habits...</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <HabitSkeleton key={i} />
+                    ))}
+                </div>
             ) : habits.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                     <p className="text-gray-500 dark:text-gray-400">No habits found. Start building one!</p>

@@ -214,9 +214,22 @@ const useNotificationStore = create((set, get) => ({
         const { scheduledNotifications } = get();
         if (scheduledNotifications.dailySummary) return; // Already scheduled
 
-        const notificationId = await notificationService.scheduleSmartNotification('daily-summary', { summary: 'Check out your productivity for today!' });
-        if (notificationId) {
-            set(state => ({ scheduledNotifications: { ...state.scheduledNotifications, dailySummary: notificationId } }));
+        // Check if notification was already sent today
+        try {
+            const lastSent = await AsyncStorage.getItem('lastDailySummary');
+            const today = new Date().toDateString();
+            if (lastSent === today) {
+                console.log('Daily summary already sent today, skipping');
+                return;
+            }
+
+            const notificationId = await notificationService.scheduleSmartNotification('daily-summary', { summary: 'Check out your productivity for today!' });
+            if (notificationId) {
+                set(state => ({ scheduledNotifications: { ...state.scheduledNotifications, dailySummary: notificationId } }));
+                await AsyncStorage.setItem('lastDailySummary', today);
+            }
+        } catch (error) {
+            console.error('Error scheduling daily summary:', error);
         }
     },
 
@@ -224,9 +237,25 @@ const useNotificationStore = create((set, get) => ({
         const { scheduledNotifications } = get();
         if (scheduledNotifications.weeklyReview) return; // Already scheduled
 
-        const notificationId = await notificationService.scheduleSmartNotification('weekly-review', { summary: 'Review your week and plan ahead!' });
-        if (notificationId) {
-            set(state => ({ scheduledNotifications: { ...state.scheduledNotifications, weeklyReview: notificationId } }));
+        // Check if notification was already sent this week
+        try {
+            const lastSent = await AsyncStorage.getItem('lastWeeklyReview');
+            const currentWeek = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+            const lastSentDate = lastSent ? new Date(lastSent) : null;
+
+            // Check if last sent was within the past 6 days
+            if (lastSentDate && (new Date() - lastSentDate) < 6 * 24 * 60 * 60 * 1000) {
+                console.log('Weekly review already sent this week, skipping');
+                return;
+            }
+
+            const notificationId = await notificationService.scheduleSmartNotification('weekly-review', { summary: 'Review your week and plan ahead!' });
+            if (notificationId) {
+                set(state => ({ scheduledNotifications: { ...state.scheduledNotifications, weeklyReview: notificationId } }));
+                await AsyncStorage.setItem('lastWeeklyReview', currentWeek);
+            }
+        } catch (error) {
+            console.error('Error scheduling weekly review:', error);
         }
     },
 

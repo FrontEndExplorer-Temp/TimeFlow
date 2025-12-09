@@ -16,6 +16,7 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import budgetRoutes from './routes/budgetRoutes.js';
 import habitRoutes from './routes/habitRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import aiKeyRoutes from './routes/aiKeyRoutes.js';
 import syncRoutes from './routes/syncRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -29,7 +30,7 @@ const app = express();
 // Production-level CORS configuration
 const getCorsOptions = () => {
     const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-    
+
     // Development origins - always allowed locally
     const devOrigins = [
         'http://localhost:5173',   // Vite dev server
@@ -42,37 +43,37 @@ const getCorsOptions = () => {
         'http://127.0.0.1:8081',
         'http://127.0.0.1:5000'
     ];
-    
+
     // Production origins - from env var (comma-separated)
     const prodOrigins = process.env.CORS_ORIGINS
         ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
         : ['https://time-flow-pied.vercel.app'];
-    
+
     // Allow all local IPs for development (useful for testing across devices on same network)
-    const allowedOrigins = isDevelopment 
+    const allowedOrigins = isDevelopment
         ? [...devOrigins, ...prodOrigins]
         : prodOrigins;
-    
+
     return {
         origin: (origin, callback) => {
             // Allow requests with no origin (like mobile apps, curl requests, local tests)
             if (!origin) return callback(null, true);
-            
+
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
-            
+
             // Fallback: allow localhost in development, deny in production
             if (isDevelopment && origin.includes('localhost')) {
                 return callback(null, true);
             }
-            
+
             if (isDevelopment) {
                 // Log but allow in dev
                 console.warn(`CORS request from unknown origin in DEV: ${origin}`);
                 return callback(null, true);
             }
-            
+
             // Reject in production silently (don't expose API details)
             return callback(new Error('Not allowed by CORS'));
         },
@@ -100,6 +101,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/ai-keys', aiKeyRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);

@@ -1,18 +1,68 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Flame, Check, Edit2, Trash2, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import useHabitStore from '../store/habitStore';
-import Button from '../components/ui/Button';
-import Modal from '../components/ui/Modal';
-import Input from '../components/ui/Input';
-import { cn } from '../utils/cn';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Animated } from 'react-native';
+import useThemeStore from '../../store/themeStore';
+import useHabitStore from '../../store/habitStore';
 
 const COLORS = ['#007AFF', '#34C759', '#FF3B30', '#FF9500', '#AF52DE', '#5856D6', '#FF2D55', '#5AC8FA'];
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const HabitCard = ({ habit, onToggle, onEdit, onDelete }) => {
+const HabitSkeleton = () => {
+    const { isDarkMode } = useThemeStore();
+    const pulseAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0,
+                    duration: 1000,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+    }, []);
+
+    const opacity = pulseAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.3, 0.7],
+    });
+
+    return (
+        <Animated.View style={{ opacity, backgroundColor: isDarkMode ? '#1E1E1E' : '#f0f0f0', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <View style={{ backgroundColor: '#ccc', width: '70%', height: 20, borderRadius: 4 }} />
+                <View style={{ backgroundColor: '#ccc', width: 60, height: 20, borderRadius: 4 }} />
+            </View>
+            <View style={{ backgroundColor: '#ccc', width: '90%', height: 14, borderRadius: 4, marginBottom: 8 }} />
+            <View style={{ backgroundColor: '#ccc', width: '60%', height: 14, borderRadius: 4 }} />
+        </Animated.View>
+    );
+};
+
+export default function HabitsScreen() {
+    const { habits, fetchHabits, addHabit, updateHabit, toggleCompletion, deleteHabit, isLoading } = useHabitStore();
+    const { theme, isDarkMode } = useThemeStore();
+    const [modalVisible, setModalVisible] = useState(false);
+    const [editingHabit, setEditingHabit] = useState(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        color: COLORS[0],
+        targetDays: [],
+        frequency: 'Daily'
+    });
+
+    useEffect(() => {
+        fetchHabits();
+    }, []);
+
     // Generate dates for the current week (Mon-Sun)
-    const weekDates = (() => {
+    const getWeekDates = () => {
         const today = new Date();
         const day = today.getDay(); // 0 Sun - 6 Sat
         const diffToMonday = (day + 6) % 7; // days since Monday
@@ -27,14 +77,14 @@ const HabitCard = ({ habit, onToggle, onEdit, onDelete }) => {
             arr.push(d);
         }
         return arr;
-    })();
+    };
 
-    const isCompletedOnDate = (date) => {
+    const isCompletedOnDate = (habit, date) => {
         const dateStr = date.toISOString().split('T')[0];
         return (habit.completions || []).some(d => d.startsWith(dateStr));
     };
 
-    const isTargetDay = (date) => {
+    const isTargetDay = (habit, date) => {
         const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
         // If no targetDays defined (legacy), assume daily (all days target)
         if (!habit.targetDays || habit.targetDays.length === 0) return true;
@@ -46,145 +96,48 @@ const HabitCard = ({ habit, onToggle, onEdit, onDelete }) => {
         return date.toISOString().split('T')[0] === today;
     };
 
-    return (
-        <div
-            className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full relative overflow-hidden group"
-            style={{ borderLeft: `4px solid ${habit.color || COLORS[0]}` }}
-        >
-            <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">{habit.name}</h3>
-                    {habit.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{habit.description}</p>
-                    )}
-                </div>
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={() => onEdit(habit)}
-                        className="text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                    >
-                        <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => onDelete(habit._id)}
-                        className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center text-xs font-medium text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">
-                    <Flame className="w-3 h-3 mr-1" />
-                    {habit.currentStreak || 0} streak
-                </div>
-                {(habit.targetDays && habit.targetDays.length > 0) && (
-                    <div className="text-xs text-gray-400">
-                        {habit.targetDays.length === 7 ? 'Daily' : habit.targetDays.join(', ')}
-                    </div>
-                )}
-            </div>
-
-            {/* Weekly Calendar */}
-            <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between">
-                {weekDates.map((date, i) => {
-                    const completed = isCompletedOnDate(date);
-                    const isTarget = isTargetDay(date);
-                    const today = isToday(date);
-                    const dayLabel = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i];
-
-                    return (
-                        <div key={i} className="flex flex-col items-center gap-1">
-                            <span
-                                className={cn(
-                                    "text-[10px] font-medium",
-                                    today ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
-                                )}
-                            >
-                                {dayLabel}
-                            </span>
-                            <button
-                                onClick={() => onToggle(habit._id, date.toISOString())}
-                                disabled={!isTarget && !completed} // Optional: discourage clicking non-target days unless already done? actually users might want to do extra
-                                className={cn(
-                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all border",
-                                    completed
-                                        ? "bg-opacity-100 text-white border-transparent"
-                                        : "bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700",
-                                    !completed && isTarget && "border-gray-300 dark:border-gray-600",
-                                    !completed && !isTarget && "border-transparent opacity-30 cursor-default",
-
-                                    // Apply dynamic color for completion
-                                    completed && `shadow-sm`
-                                )}
-                                style={{
-                                    backgroundColor: completed ? (habit.color || COLORS[0]) : undefined,
-                                    borderColor: (!completed && isTarget) ? (habit.color || COLORS[0]) : undefined
-                                }}
-                            >
-                                {completed && <Check className="w-4 h-4" />}
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-const Habits = () => {
-    const { habits, fetchHabits, addHabit, updateHabit, toggleCompletion, deleteHabit, isLoading } = useHabitStore();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingHabit, setEditingHabit] = useState(null);
-    const [selectedColor, setSelectedColor] = useState(COLORS[0]);
-    const [selectedDays, setSelectedDays] = useState([]);
-
-    const { register, handleSubmit, reset, setValue } = useForm();
-
-    useEffect(() => {
-        fetchHabits();
-    }, [fetchHabits]);
-
     const handleOpenModal = (habit = null) => {
         if (habit) {
             setEditingHabit(habit);
-            setValue('name', habit.name);
-            setValue('description', habit.description);
-            setSelectedColor(habit.color || COLORS[0]);
-            setSelectedDays(habit.targetDays || []);
+            setFormData({
+                name: habit.name,
+                description: habit.description || '',
+                color: habit.color || COLORS[0],
+                targetDays: habit.targetDays || [],
+                frequency: habit.frequency || 'Daily'
+            });
         } else {
             setEditingHabit(null);
-            reset();
-            setSelectedColor(COLORS[0]);
-            setSelectedDays([]); // Empty means "Daily" usually? logic in mobile was 0 is Custom? 
-            // Mobile app logic: "If formData.targetDays && length > 0 && length < 7 { freq = Custom } else Daily"
-            // So if empty, let's treat it as user hasn't selected anything yet.
-            // But for UI, maybe we should pre-select all for Daily?
-            // Let's start empty.
+            setFormData({
+                name: '',
+                description: '',
+                color: COLORS[0],
+                targetDays: [],
+                frequency: 'Daily'
+            });
         }
-        setIsModalOpen(true);
+        setModalVisible(true);
     };
 
     const toggleDay = (day) => {
-        if (selectedDays.includes(day)) {
-            setSelectedDays(selectedDays.filter(d => d !== day));
-        } else {
-            setSelectedDays([...selectedDays, day]);
-        }
-    };
+        const newDays = formData.targetDays.includes(day)
+            ? formData.targetDays.filter(d => d !== day)
+            : [...formData.targetDays, day];
 
-    const onSubmit = async (data) => {
         let freq = 'Daily';
-        if (selectedDays.length > 0 && selectedDays.length < 7) {
+        if (newDays.length > 0 && newDays.length < 7) {
             freq = 'Custom';
         }
 
+        setFormData({ ...formData, targetDays: newDays, frequency: freq });
+    };
+
+    const handleSaveHabit = async () => {
+        if (!formData.name.trim()) return;
+
         const habitData = {
-            ...data,
-            color: selectedColor,
-            targetDays: selectedDays,
-            frequency: freq
+            ...formData,
+            frequency: formData.targetDays.length > 0 && formData.targetDays.length < 7 ? 'Custom' : 'Daily'
         };
 
         if (editingHabit) {
@@ -192,132 +145,465 @@ const Habits = () => {
         } else {
             await addHabit(habitData);
         }
-        setIsModalOpen(false);
-        reset();
+        setModalVisible(false);
+    };
+
+    const renderHabitCard = ({ item }) => {
+        const weekDates = getWeekDates();
+
+        return (
+            <View
+                style={[
+                    styles.habitCard,
+                    { backgroundColor: theme.colors.card, borderLeftColor: item.color || COLORS[0] },
+                    isDarkMode && { borderWidth: 1, borderColor: theme.colors.border }
+                ]}
+            >
+                <View style={styles.habitHeader}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={[styles.habitName, { color: theme.colors.text }]} numberOfLines={1}>
+                            {item.name}
+                        </Text>
+                        {item.description && (
+                            <Text style={[styles.habitDescription, { color: theme.colors.subText }]} numberOfLines={1}>
+                                {item.description}
+                            </Text>
+                        )}
+                    </View>
+                    <View style={styles.habitActions}>
+                        <TouchableOpacity onPress={() => handleOpenModal(item)} style={styles.actionButton}>
+                            <Text style={{ color: '#007AFF', fontSize: 16 }}>✎</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => deleteHabit(item._id)} style={styles.actionButton}>
+                            <Text style={{ color: '#FF3B30', fontSize: 18 }}>×</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Streak Badge */}
+                <View style={styles.streakContainer}>
+                    <View style={[styles.streakBadge, { backgroundColor: '#FF9500' + '20' }]}>
+                        <Text style={{ fontSize: 12 }}>🔥</Text>
+                        <Text style={[styles.streakText, { color: '#FF9500' }]}>
+                            {item.currentStreak || 0} streak
+                        </Text>
+                    </View>
+                    {item.targetDays && item.targetDays.length > 0 && (
+                        <Text style={[styles.frequencyText, { color: theme.colors.subText }]}>
+                            {item.targetDays.length === 7 ? 'Daily' : item.targetDays.join(', ')}
+                        </Text>
+                    )}
+                </View>
+
+                {/* Weekly Calendar */}
+                <View style={styles.weeklyCalendar}>
+                    {weekDates.map((date, i) => {
+                        const completed = isCompletedOnDate(item, date);
+                        const isTarget = isTargetDay(item, date);
+                        const today = isToday(date);
+                        const dayLabel = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i];
+
+                        return (
+                            <View key={i} style={styles.dayColumn}>
+                                <Text style={[styles.dayLabel, today && { color: '#007AFF' }]}>
+                                    {dayLabel}
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => toggleCompletion(item._id, date.toISOString())}
+                                    disabled={!isTarget && !completed}
+                                    style={[
+                                        styles.dayCircle,
+                                        completed && { backgroundColor: item.color || COLORS[0] },
+                                        !completed && isTarget && { borderColor: item.color || COLORS[0], borderWidth: 2 },
+                                        !completed && !isTarget && { opacity: 0.3 }
+                                    ]}
+                                >
+                                    {completed && <Text style={styles.checkmark}>✓</Text>}
+                                </TouchableOpacity>
+                            </View>
+                        );
+                    })}
+                </View>
+            </View>
+        );
+    };
+
+    const themeStyles = {
+        container: {
+            backgroundColor: theme.colors.background,
+        },
+        text: {
+            color: theme.colors.text,
+        },
+        subText: {
+            color: theme.colors.subText,
+        },
+        modalContent: {
+            backgroundColor: theme.colors.card,
+        },
+        input: {
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+            backgroundColor: theme.colors.input,
+        },
     };
 
     return (
-        <div className="space-y-6">
+        <View style={[styles.container, themeStyles.container]}>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Habits</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Build better habits, one day at a time</p>
-                </div>
-                <Button onClick={() => handleOpenModal()}>
-                    <Plus className="w-5 h-5 mr-2" />
-                    New Habit
-                </Button>
-            </div>
+            <View style={styles.header}>
+                <View>
+                    <Text style={[styles.headerTitle, themeStyles.text]}>Habits</Text>
+                    <Text style={[styles.headerSubtitle, themeStyles.subText]}>
+                        Build better habits, one day at a time
+                    </Text>
+                </View>
+            </View>
 
             {/* Habits List */}
-            {isLoading && !habits.length ? (
-                <div className="text-center py-12">Loading habits...</div>
+            {isLoading && habits.length === 0 ? (
+                <View style={styles.listContent}>
+                    <HabitSkeleton />
+                    <HabitSkeleton />
+                    <HabitSkeleton />
+                </View>
             ) : habits.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                    <p className="text-gray-500 dark:text-gray-400">No habits found. Start building one!</p>
-                </div>
+                <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyText, themeStyles.subText]}>
+                        No habits found. Start building one!
+                    </Text>
+                </View>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {habits.map((habit) => (
-                        <HabitCard
-                            key={habit._id}
-                            habit={habit}
-                            onToggle={toggleCompletion}
-                            onEdit={handleOpenModal}
-                            onDelete={deleteHabit}
-                        />
-                    ))}
-                </div>
+                <FlatList
+                    data={habits}
+                    renderItem={renderHabitCard}
+                    keyExtractor={(item) => item._id}
+                    contentContainerStyle={styles.listContent}
+                />
             )}
 
-            {/* Add/Edit Habit Modal */}
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={editingHabit ? "Edit Habit" : "Create New Habit"}
+            {/* Add Button */}
+            <TouchableOpacity
+                style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+                onPress={() => handleOpenModal()}
             >
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                    <Input
-                        label="Habit Name"
-                        placeholder="e.g., Read 30 mins"
-                        {...register('name', { required: 'Name is required' })}
-                    />
+                <Text style={styles.fabText}>+</Text>
+            </TouchableOpacity>
 
-                    <Input
-                        label="Description (Optional)"
-                        placeholder="Why do you want to build this habit?"
-                        {...register('description')}
-                    />
+            {/* Add/Edit Modal */}
+            <Modal visible={modalVisible} animationType="slide" transparent>
+                <View style={styles.modalContainer}>
+                    <View style={[styles.modalContent, themeStyles.modalContent]}>
+                        <Text style={[styles.modalTitle, themeStyles.text]}>
+                            {editingHabit ? 'Edit Habit' : 'Create New Habit'}
+                        </Text>
 
-                    {/* Target Days */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Days</label>
-                        <div className="flex justify-between gap-1">
+                        {/* Name Input */}
+                        <Text style={[styles.label, themeStyles.text]}>Habit Name</Text>
+                        <TextInput
+                            style={[styles.input, themeStyles.input]}
+                            placeholder="e.g., Read 30 mins"
+                            placeholderTextColor={theme.colors.subText}
+                            value={formData.name}
+                            onChangeText={(text) => setFormData({ ...formData, name: text })}
+                        />
+
+                        {/* Description Input */}
+                        <Text style={[styles.label, themeStyles.text]}>Description (Optional)</Text>
+                        <TextInput
+                            style={[styles.input, themeStyles.input]}
+                            placeholder="Why do you want to build this habit?"
+                            placeholderTextColor={theme.colors.subText}
+                            value={formData.description}
+                            onChangeText={(text) => setFormData({ ...formData, description: text })}
+                        />
+
+                        {/* Target Days */}
+                        <Text style={[styles.label, themeStyles.text]}>Target Days</Text>
+                        <View style={styles.daysContainer}>
                             {WEEK_DAYS.map(day => {
-                                const isSelected = selectedDays.includes(day);
+                                const isSelected = formData.targetDays.includes(day);
                                 return (
-                                    <button
+                                    <TouchableOpacity
                                         key={day}
-                                        type="button"
-                                        onClick={() => toggleDay(day)}
-                                        className={cn(
-                                            "w-9 h-9 rounded-full text-xs font-semibold transition-all",
-                                            isSelected
-                                                ? "text-white"
-                                                : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200"
-                                        )}
-                                        style={{ backgroundColor: isSelected ? selectedColor : undefined }}
+                                        onPress={() => toggleDay(day)}
+                                        style={[
+                                            styles.dayButton,
+                                            isSelected && { backgroundColor: formData.color }
+                                        ]}
                                     >
-                                        {day.charAt(0)}
-                                    </button>
+                                        <Text style={[
+                                            styles.dayButtonText,
+                                            { color: isSelected ? '#fff' : theme.colors.subText }
+                                        ]}>
+                                            {day.charAt(0)}
+                                        </Text>
+                                    </TouchableOpacity>
                                 );
                             })}
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                            {selectedDays.length === 0
-                                ? "No days selected (will count as Daily)"
-                                : selectedDays.length === 7
-                                    ? "Every day"
-                                    : "Custom schedule"}
-                        </p>
-                    </div>
+                        </View>
+                        <Text style={[styles.helperText, themeStyles.subText]}>
+                            {formData.targetDays.length === 0
+                                ? 'No days selected (will count as Daily)'
+                                : formData.targetDays.length === 7
+                                    ? 'Every day'
+                                    : 'Custom schedule'}
+                        </Text>
 
-                    {/* Color Picker */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Color</label>
-                        <div className="flex gap-3 flex-wrap">
+                        {/* Color Picker */}
+                        <Text style={[styles.label, themeStyles.text]}>Color</Text>
+                        <View style={styles.colorsContainer}>
                             {COLORS.map((color) => (
-                                <button
+                                <TouchableOpacity
                                     key={color}
-                                    type="button"
-                                    onClick={() => setSelectedColor(color)}
-                                    className={cn(
-                                        "w-8 h-8 rounded-full border border-gray-200 shadow-sm transition-transform hover:scale-110",
-                                    )}
-                                    style={{
-                                        backgroundColor: color,
-                                        transform: selectedColor === color ? 'scale(1.2)' : 'scale(1)',
-                                        borderWidth: selectedColor === color ? '2px' : '0px',
-                                        borderColor: '#333'
-                                    }}
+                                    onPress={() => setFormData({ ...formData, color })}
+                                    style={[
+                                        styles.colorButton,
+                                        { backgroundColor: color },
+                                        formData.color === color && { borderWidth: 3, borderColor: '#333' }
+                                    ]}
                                 />
                             ))}
-                        </div>
-                    </div>
+                        </View>
 
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" isLoading={isLoading}>
-                            {editingHabit ? 'Update Habit' : 'Create Habit'}
-                        </Button>
-                    </div>
-                </form>
+                        {/* Buttons */}
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.cancelButton, { backgroundColor: theme.colors.danger }]}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.buttonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
+                                onPress={handleSaveHabit}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {editingHabit ? 'Update Habit' : 'Create Habit'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
             </Modal>
-        </div>
+        </View>
     );
-};
+}
 
-export default Habits;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingTop: 40,
+    },
+    header: {
+        paddingHorizontal: 20,
+        marginBottom: 20,
+    },
+    headerTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        marginTop: 4,
+    },
+    listContent: {
+        padding: 16,
+        paddingBottom: 100,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    emptyText: {
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    habitCard: {
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 16,
+        borderLeftWidth: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    habitHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 8,
+    },
+    habitName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    habitDescription: {
+        fontSize: 14,
+        marginTop: 4,
+    },
+    habitActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    actionButton: {
+        padding: 4,
+    },
+    streakContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16,
+    },
+    streakBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
+    },
+    streakText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    frequencyText: {
+        fontSize: 11,
+    },
+    weeklyCalendar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.05)',
+    },
+    dayColumn: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    dayLabel: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: '#999',
+    },
+    dayCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+    },
+    checkmark: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 24,
+        right: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+    },
+    fabText: {
+        color: '#fff',
+        fontSize: 32,
+        marginTop: -4,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        padding: 24,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        maxHeight: '90%',
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    label: {
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 10,
+    },
+    input: {
+        borderWidth: 1,
+        padding: 14,
+        borderRadius: 12,
+        marginBottom: 20,
+        fontSize: 16,
+    },
+    daysContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    dayButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#e0e0e0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dayButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    helperText: {
+        fontSize: 12,
+        marginBottom: 20,
+    },
+    colorsContainer: {
+        flexDirection: 'row',
+        gap: 12,
+        flexWrap: 'wrap',
+        marginBottom: 24,
+    },
+    colorButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 12,
+    },
+    cancelButton: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 14,
+        alignItems: 'center',
+    },
+    saveButton: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 14,
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+});

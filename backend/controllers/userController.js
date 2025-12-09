@@ -25,6 +25,13 @@ const authUser = asyncHandler(async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            gender: user.gender,
+            profilePicture: user.profilePicture,
+            onboardingCompleted: user.onboardingCompleted,
+            isAdmin: user.isAdmin,
+            xp: user.xp,
+            level: user.level,
+            badges: user.badges,
             token: generateToken(user._id),
         });
     } else {

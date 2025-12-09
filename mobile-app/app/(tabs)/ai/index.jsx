@@ -69,7 +69,10 @@ export default function AiScreen() {
         error,
         generateDailyPlan,
         getTaskSuggestions,
+
         getHabitInsights,
+        getFinanceInsights,
+        financeInsights,
         reset,
         checkExpiration
     } = useAiStore();
@@ -274,7 +277,10 @@ export default function AiScreen() {
             <View style={styles.actionsRow}>
                 <ActionButton icon="calendar" label="Daily Plan" onPress={generateDailyPlan} disabled={isGenerating} />
                 <ActionButton icon="bulb" label="Task Suggestions" onPress={getTaskSuggestions} disabled={isGenerating} />
+            </View>
+            <View style={styles.actionsRow}>
                 <ActionButton icon="bar-chart" label="Habit Insights" onPress={getHabitInsights} disabled={isGenerating} />
+                <ActionButton icon="cash" label="Finance Insights" onPress={getFinanceInsights} disabled={isGenerating} />
             </View>
 
             {isGenerating && (
@@ -308,6 +314,10 @@ export default function AiScreen() {
 
                     <CollapsibleCard title="Habit Insights" hasData={!!habitInsights}>
                         {habitInsights ? <SimpleMarkdown content={habitInsights} /> : <Text style={themeStyles.subText}>No habit insights yet — tap "Habit Insights" to generate.</Text>}
+                    </CollapsibleCard>
+
+                    <CollapsibleCard title="Finance Insights" hasData={!!financeInsights}>
+                        {financeInsights?.analysis ? <SimpleMarkdown content={financeInsights.analysis} /> : <Text style={themeStyles.subText}>No finance insights yet — tap "Finance Insights" to generate.</Text>}
                     </CollapsibleCard>
                 </>
             )}

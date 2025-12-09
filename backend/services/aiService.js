@@ -1,72 +1,122 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import AIKey from '../models/AIKey.js';
 
-// Use a configurable model id so we can fall back if a specific name
-// isn't provided. We will support per-call overrides and multi-model
-// workflows (call multiple models and return both responses).
-// Support a comma-separated list of default models via `GENERATIVE_MODELS`.
-// If not present, fall back to the single `GENERATIVE_MODEL` or a safe default.
+// Default Models
 const DEFAULT_MODELS = (process.env.GENERATIVE_MODELS && process.env.GENERATIVE_MODELS.split(',').map(s => s.trim()).filter(Boolean))
     || [process.env.GENERATIVE_MODEL || 'gemini-1.5-flash'];
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-console.log('🔑 GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.slice(0, 6) + '...' : 'undefined');
-console.log('🤖 Default generative models:', DEFAULT_MODELS.join(', '));
 
-/**
- * Generate AI response based on a prompt.
- * opts: {
- *   model: 'models/xyz'          // single model override
- *   models: ['models/a','models/b'] // call multiple models sequentially
- * }
- *
- * Return value:
- * - If a single model is used: returns the response text string (backwards-compatible)
- * - If multiple models are used: returns { results: [{model, text, timeMs}], final }
- */
-export const generateAIResponse = async (prompt, opts = {}) => {
-    const models = opts.models && opts.models.length > 0
-        ? opts.models
-        : (opts.model ? [opts.model] : DEFAULT_MODELS);
+// Helper to get active keys (Prioritizing User Keys -> Global Keys)
+const getActiveKeys = async (userId) => {
+    // 1. Get Personal Keys
+    const personalKeys = await AIKey.find({
+        owner: userId,
+        status: 'active',
+        isActive: true
+    }).sort('lastUsedAt');
 
-    // Helper to call one model and return text + timing
-    const callModel = async (modelId) => {
-        const start = Date.now();
-        try {
-            const instance = genAI.getGenerativeModel({ model: modelId });
-            const result = await instance.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
-            const timeMs = Date.now() - start;
-            return { model: modelId, text, timeMs };
-        } catch (error) {
-            const timeMs = Date.now() - start;
-            console.error(`AI Generation Error for model ${modelId}:`, error?.message || error);
-            if (error?.status === 404) {
-                console.error(`Model ${modelId} not supported by the API/version.`);
-            }
-            throw error;
-        }
-    };
+    // 2. Get Global Keys (Explicit Global OR Legacy/No Owner)
+    const globalKeys = await AIKey.find({
+        $or: [
+            { isGlobal: true },
+            { isGlobal: { $exists: false } },
+            { owner: { $exists: false } }
+        ],
+        status: 'active',
+        isActive: true
+    }).sort('lastUsedAt');
 
-    if (models.length === 1) {
-        // Single model: return text for backwards compatibility
-        const r = await callModel(models[0]);
-        return r.text;
-    }
-
-    // Multiple models: call sequentially and return structured result
-    const results = [];
-    for (const m of models) {
-        const res = await callModel(m);
-        results.push(res);
-    }
-    // Prefer the last model's text as the final output
-    const final = results[results.length - 1].text;
-    return { results, final };
+    // 3. Merge: Personal first, then Global
+    return [...personalKeys, ...globalKeys];
 };
 
 /**
- * Create prompt for daily plan generation
+ * Generate AI response with Key Rotation
  */
+export const generateAIResponse = async (prompt, opts = {}, userId) => {
+    let keys = [];
+
+    // Attempt to fetch keys from DB
+    try {
+        keys = await getActiveKeys(userId);
+    } catch (error) {
+        console.error("Error fetching AI keys:", error);
+    }
+
+    // Add fallback env key if no keys found
+    if (keys.length === 0 && process.env.GEMINI_API_KEY) {
+        keys.push({
+            key: process.env.GEMINI_API_KEY,
+            isEnv: true,
+            getDecryptedKey: function () { return this.key },
+            label: 'Env Fallback'
+        });
+    }
+
+    if (keys.length === 0) {
+        throw new Error('No active AI keys available.');
+    }
+
+    let lastError = null;
+    const models = opts.models || (opts.model ? [opts.model] : DEFAULT_MODELS);
+    const modelName = models[0];
+
+    // Iterate through keys (Round Robin / Failover)
+    for (const keyObj of keys) {
+        try {
+            const apiKey = keyObj.isEnv ? keyObj.key : keyObj.getDecryptedKey();
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const instance = genAI.getGenerativeModel({ model: modelName });
+
+            console.log(`🤖 AI Request using ${keyObj.label || 'Env'} on ${modelName}`);
+
+            const result = await instance.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+
+            // Success! Update Usage
+            if (!keyObj.isEnv) {
+                await AIKey.findByIdAndUpdate(keyObj._id, {
+                    $inc: { usageCount: 1 },
+                    status: 'active',
+                    lastUsedAt: new Date()
+                });
+            }
+
+            return text;
+
+        } catch (error) {
+            console.error(`AI Key Failed (${keyObj.label || 'Env'}):`, error.message);
+            lastError = error;
+
+            if (!keyObj.isEnv) {
+                // Handle Failures
+                if (error.message.includes('429') || error.message.includes('Quota')) {
+                    await AIKey.findByIdAndUpdate(keyObj._id, {
+                        status: 'quota_exceeded',
+                        lastError: '429 Quota Exceeded',
+                        errorCount: (keyObj.errorCount || 0) + 1
+                    });
+                } else if (error.message.includes('401') || error.message.includes('API key not valid')) {
+                    await AIKey.findByIdAndUpdate(keyObj._id, {
+                        status: 'revoked',
+                        isActive: false,
+                        lastError: `Auth Error`,
+                    });
+                } else {
+                    await AIKey.findByIdAndUpdate(keyObj._id, {
+                        lastError: error.message,
+                        $inc: { errorCount: 1 }
+                    });
+                }
+            }
+            // Continue loop
+        }
+    }
+
+    throw new Error(`AI Generation failed after checking available keys. Last error: ${lastError?.message}`);
+};
+
+// Prompts Helpers
 export const createDailyPlanPrompt = (userData) => {
     const { tasks, habits, todayStats } = userData;
 
@@ -91,9 +141,6 @@ Please provide:
 Keep the response concise and actionable (max 300 words).`;
 };
 
-/**
- * Create prompt for task suggestions
- */
 export const createTaskSuggestionsPrompt = (tasks) => {
     return `You are a task management expert. Analyze these tasks and provide prioritization suggestions:
 
@@ -107,9 +154,6 @@ Provide:
 Keep response brief (max 200 words).`;
 };
 
-/**
- * Create prompt for habit insights
- */
 export const createHabitInsightsPrompt = (habits) => {
     return `You are a habit coach. Analyze these habits and provide insights:
 
@@ -124,9 +168,6 @@ Provide:
 Keep response motivational and concise (max 250 words).`;
 };
 
-/**
- * Create prompt for task breakdown
- */
 export const createTaskBreakdownPrompt = (taskTitle, taskDescription) => {
     return `You are a project manager. Break down this task into smaller, actionable subtasks:
 Task: "${taskTitle}"
@@ -139,9 +180,6 @@ Example format:
 Do not include any markdown formatting or extra text. Just the JSON array.`;
 };
 
-/**
- * Create prompt for finance insights
- */
 export const createFinanceInsightsPrompt = (transactions) => {
     return `You are a financial advisor. Analyze these recent transactions:
 ${transactions.map(t => `- ${t.date.split('T')[0]}: ${t.description} (${t.amount} ${t.type}) - Category: ${t.category}`).join('\n')}
@@ -154,9 +192,6 @@ Provide:
 Keep response concise (max 200 words).`;
 };
 
-/**
- * Create prompt for note summarization
- */
 export const createNoteSummaryPrompt = (noteContent) => {
     return `You are an expert summarizer. Summarize the following note into concise bullet points and extract any action items:
 
@@ -172,6 +207,7 @@ Format:
 - [ ] Item 2`;
 };
 
+
 export default {
     generateAIResponse,
     createDailyPlanPrompt,
@@ -181,5 +217,3 @@ export default {
     createFinanceInsightsPrompt,
     createNoteSummaryPrompt,
 };
-
-

@@ -35,7 +35,23 @@ export default function SignupScreen() {
             await register(name, email, password, gender);
             router.replace(`/(auth)/verify-email?email=${email}`);
         } catch (error) {
-            const errorMsg = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
+            let errorMsg = 'Signup failed. Please try again.';
+
+            if (!error.response) {
+                // Network error
+                errorMsg = 'Unable to connect to server. Please check your internet connection and try again.';
+            } else if (error.response.status === 400) {
+                errorMsg = error.response?.data?.message || 'Invalid input. Please check your information.';
+            } else if (error.response.status === 409) {
+                errorMsg = 'An account with this email already exists. Please login or use a different email.';
+            } else if (error.response.status === 500 || error.response.status === 502 || error.response.status === 503) {
+                errorMsg = 'Server is currently unavailable. Please try again in a few moments.';
+            } else if (error.response?.data?.message) {
+                errorMsg = error.response.data.message;
+            } else if (error.message?.includes('timeout')) {
+                errorMsg = 'Request timed out. Please check your internet connection and try again.';
+            }
+
             Alert.alert('Signup Failed', errorMsg);
         }
     };

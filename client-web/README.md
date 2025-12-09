@@ -10,6 +10,7 @@ TimeFlow Web is the desktop/browser companion to the TimeFlow mobile app. It off
 - **Notes Editor**: Rich text editing for your notes.
 - **Job Board**: Kanban board for tracking job applications.
 - **Habit Tracker**: Visualize your habit streaks and consistency.
+- **AI Integration**: Configure and manage your AI settings and keys.
 - **Dark/Light Mode**: Seamless theme switching to match your preference.
 
 ## Tech Stack

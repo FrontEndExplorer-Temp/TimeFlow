@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import useThemeStore from '../../store/themeStore';
 import useJobStore from '../../store/jobStore';
+import InterviewPrepModal from '../../components/InterviewPrepModal';
+import JobStats from '../../components/JobStats';
 
 const JobSkeleton = () => {
     const { isDarkMode } = useThemeStore();
@@ -56,14 +58,15 @@ const STATUS_COLORS = {
 };
 
 export default function JobsScreen() {
-    const { jobs, fetchJobs, addJob, updateJob, deleteJob, parseJobLink, isLoading } = useJobStore();
+    const { jobs, fetchJobs, addJob, updateJob, deleteJob, getInterviewPrep, isLoading } = useJobStore();
     const { theme, isDarkMode } = useThemeStore();
     const [modalVisible, setModalVisible] = useState(false);
-    const [newJob, setNewJob] = useState({ company: '', role: '', status: 'Wishlist', location: '', link: '' });
+    const [newJob, setNewJob] = useState({ company: '', role: '', status: 'Wishlist', location: '', notes: '', skills: '' });
     const [activeTab, setActiveTab] = useState('All');
-    const [jobLink, setJobLink] = useState('');
-    const [isParsing, setIsParsing] = useState(false);
     const [editingJob, setEditingJob] = useState(null);
+    const [prepModalVisible, setPrepModalVisible] = useState(false);
+    const [prepData, setPrepData] = useState(null);
+    const [prepLoading, setPrepLoading] = useState(false);
 
     useEffect(() => {
         fetchJobs();
@@ -76,15 +79,19 @@ export default function JobsScreen() {
     const handleSaveJob = async () => {
         if (!newJob.company.trim() || !newJob.role.trim()) return;
 
+        const jobData = {
+            ...newJob,
+            skills: newJob.skills.split(',').map(s => s.trim()).filter(Boolean)
+        };
+
         if (editingJob) {
-            await updateJob(editingJob._id, newJob);
+            await updateJob(editingJob._id, jobData);
             setEditingJob(null);
         } else {
-            await addJob(newJob);
+            await addJob(jobData);
         }
 
-        setNewJob({ company: '', role: '', status: 'Wishlist', location: '', link: '' });
-        setJobLink('');
+        setNewJob({ company: '', role: '', status: 'Wishlist', location: '', notes: '', skills: '' });
         setModalVisible(false);
     };
 
@@ -95,26 +102,18 @@ export default function JobsScreen() {
             role: job.role,
             status: job.status,
             location: job.location || '',
-            link: job.link || ''
+            notes: job.notes || '',
+            skills: job.skills ? job.skills.join(', ') : ''
         });
-        setJobLink(job.link || '');
         setModalVisible(true);
     };
 
-    const handleParseLink = async () => {
-        if (!jobLink) return;
-        setIsParsing(true);
-        const parsedData = await parseJobLink(jobLink);
-        setIsParsing(false);
-        if (parsedData) {
-            setNewJob({
-                ...newJob,
-                company: parsedData.company || newJob.company,
-                role: parsedData.role || newJob.role,
-                location: parsedData.location || newJob.location,
-                link: parsedData.link || jobLink,
-            });
-        }
+    const handleInterviewPrep = async (job) => {
+        setPrepModalVisible(true);
+        setPrepLoading(true);
+        const data = await getInterviewPrep(job.role, job.skills || '');
+        setPrepData(data);
+        setPrepLoading(false);
     };
 
     const themeStyles = {
@@ -173,6 +172,12 @@ export default function JobsScreen() {
                 </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                    onPress={() => handleInterviewPrep(item)}
+                    style={[styles.prepButton, { backgroundColor: theme.colors.primary + '20' }]}
+                >
+                    <Text style={[styles.prepButtonText, { color: theme.colors.primary }]}>✨ Prep</Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEditJob(item)} style={styles.deleteButton}>
                     <Text style={[styles.deleteText, { color: theme.colors.subText, fontSize: 18 }]}>✎</Text>
                 </TouchableOpacity>
@@ -235,6 +240,13 @@ export default function JobsScreen() {
                 </ScrollView>
             </View>
 
+            {/* Job Stats */}
+            {!isLoading && jobs.length > 0 && (
+                <View style={styles.statsContainer}>
+                    <JobStats jobs={jobs} />
+                </View>
+            )}
+
             {isLoading && jobs.length === 0 ? (
                 <View style={styles.listContent}>
                     <JobSkeleton />
@@ -256,8 +268,7 @@ export default function JobsScreen() {
                 style={[styles.fab, { backgroundColor: theme.colors.primary }]}
                 onPress={() => {
                     setEditingJob(null);
-                    setNewJob({ company: '', role: '', status: 'Wishlist', location: '', link: '' });
-                    setJobLink('');
+                    setNewJob({ company: '', role: '', status: 'Wishlist', location: '', notes: '', skills: '' });
                     setModalVisible(true);
                 }}
             >
@@ -270,23 +281,6 @@ export default function JobsScreen() {
                         <Text style={[styles.modalTitle, themeStyles.text]}>
                             {editingJob ? 'Edit Job' : 'New Job'}
                         </Text>
-
-                        <View style={styles.linkContainer}>
-                            <TextInput
-                                style={[styles.input, themeStyles.input, { flex: 1, marginBottom: 0, marginRight: 10 }]}
-                                placeholder="Paste Link (LinkedIn/Naukri)"
-                                placeholderTextColor={theme.colors.subText}
-                                value={jobLink}
-                                onChangeText={setJobLink}
-                            />
-                            <TouchableOpacity
-                                style={[styles.parseButton, { backgroundColor: theme.colors.chip }]}
-                                onPress={handleParseLink}
-                                disabled={isParsing}
-                            >
-                                {isParsing ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <Text style={[themeStyles.text, { fontSize: 12, fontWeight: '600' }]}>Auto-fill</Text>}
-                            </TouchableOpacity>
-                        </View>
 
                         <TextInput
                             style={[styles.input, themeStyles.input]}
@@ -308,6 +302,22 @@ export default function JobsScreen() {
                             placeholderTextColor={theme.colors.subText}
                             value={newJob.location}
                             onChangeText={(text) => setNewJob({ ...newJob, location: text })}
+                        />
+                        <TextInput
+                            style={[styles.input, themeStyles.input]}
+                            placeholder="Skills (comma separated)"
+                            placeholderTextColor={theme.colors.subText}
+                            value={newJob.skills}
+                            onChangeText={(text) => setNewJob({ ...newJob, skills: text })}
+                        />
+                        <TextInput
+                            style={[styles.input, themeStyles.input, { height: 100, textAlignVertical: 'top' }]}
+                            placeholder="Notes"
+                            placeholderTextColor={theme.colors.subText}
+                            value={newJob.notes}
+                            multiline
+                            numberOfLines={4}
+                            onChangeText={(text) => setNewJob({ ...newJob, notes: text })}
                         />
 
                         {/* Status Selector */}
@@ -345,6 +355,14 @@ export default function JobsScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Interview Prep Modal */}
+            <InterviewPrepModal
+                visible={prepModalVisible}
+                onClose={() => setPrepModalVisible(false)}
+                prepData={prepData}
+                loading={prepLoading}
+            />
         </View>
     );
 }
@@ -411,6 +429,18 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         lineHeight: 20,
+    },
+    prepButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    prepButtonText: {
+        fontSize: 12,
+        fontWeight: ' 600',
+    },
+    statsContainer: {
+        paddingHorizontal: 16,
     },
     statusContainer: {
         flexDirection: 'row',
@@ -487,19 +517,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 16,
         fontSize: 16,
-    },
-    linkContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    parseButton: {
-        padding: 12,
-        borderRadius: 12,
-        marginLeft: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        minWidth: 80,
     },
     modalButtons: {
         flexDirection: 'row',

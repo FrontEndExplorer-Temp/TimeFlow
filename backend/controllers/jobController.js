@@ -15,7 +15,7 @@ const getJobs = asyncHandler(async (req, res) => {
 // @route   POST /api/jobs
 // @access  Private
 const createJob = asyncHandler(async (req, res) => {
-    const { company, role, status, location, salary, link, dateApplied, notes, skills } = req.body;
+    const { company, role, status, location, link, dateApplied, notes, skills } = req.body;
 
     const job = await Job.create({
         user: req.user._id,
@@ -23,7 +23,6 @@ const createJob = asyncHandler(async (req, res) => {
         role,
         status,
         location,
-        salary,
         link,
         dateApplied,
         notes,

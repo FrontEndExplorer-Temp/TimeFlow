@@ -14,8 +14,9 @@ A comprehensive full-stack mobile application for managing every aspect of your 
 - 🛡️ **Admin Dashboard** - User management and system oversight
 - 🔐 **Advanced Auth** - Email verification, password reset, and OAuth
 - 🌙 **Dark Mode** - Fully supported dark/light theme system
-- 🤖 **AI Integration** - AI-powered daily plans and insights (Google Gemini)
+- 🤖 **AI Integration** - AI-powered daily plans, finance insights, and task suggestions (Google Gemini)
 - 🔄 **Multi-device Sync** - Seamless sync across all devices with offline support
+- 🔑 **AI Key Management** - BYOK (Bring Your Own Key) support for personalized AI usage
 - 🗑️ **Data Retention** - Automated cleanup of old data (90-day policy)
 
 ## 📋 Tech Stack
@@ -28,7 +29,6 @@ A comprehensive full-stack mobile application for managing every aspect of your 
 - **Security**: bcryptjs, helmet
 - **AI**: Google Gemini API
 - **Email**: Nodemailer
-- **Scraping**: Cheerio (Job link parsing)
 - **Automation**: node-cron
 
 ### Frontend
@@ -120,6 +120,7 @@ npx expo start --ios
 1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create a new API key
 3. Add to backend `.env` as `GEMINI_API_KEY`
+4. Or use the "AI Configuration" in your profile to add your own personal key!
 
 ### MongoDB Atlas (Optional)
 1. Create account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
@@ -150,6 +151,7 @@ npx expo start --ios
 - Tap **"🤖 Generate Daily Plan"** on home screen
 - Get personalized task prioritization
 - Receive habit insights and recommendations
+- **New**: Configure your own AI keys in Profile!
 
 ## 📂 Project Structure
 
@@ -166,14 +168,20 @@ time_managment/
 │   ├── utils/           # Helper functions
 │   └── server.js        # Entry point
 │
-└── mobile-app/
-    ├── app/
-    │   ├── (auth)/      # Login/Signup screens
-    │   ├── (tabs)/      # Main app screens
-    │   └── _layout.js   # Root layout
-    ├── store/           # Zustand state stores
-    ├── services/        # API & utilities
-    └── package.json
+├── mobile-app/
+│   ├── app/
+│   │   ├── (auth)/      # Login/Signup screens
+│   │   ├── (tabs)/      # Main app screens
+│   │   └── _layout.js   # Root layout
+│   ├── store/           # Zustand state stores
+│   ├── services/        # API & utilities
+│   └── package.json
+├── client-web/
+│   ├── src/
+│   │   ├── pages/       # Web Pages (Dashboard, Tasks, etc)
+│   │   ├── components/  # Reusable UI components
+│   │   └── services/    # API & State
+│   └── package.json
 ```
 
 ## 🔒 Security Features
@@ -331,17 +339,14 @@ For issues and questions:
 - Check the walkthrough documentation
 - Review the implementation plans
 
-## 🎯 Roadmap
-
-- [ ] Push notifications
-- [ ] Calendar integration
-- [ ] Data export (PDF/CSV)
-- [ ] Advanced analytics
-- [ ] Team collaboration
+## 🎯 Status
+**Project is Feature Complete (v1.3.0)**
+- [x] Push notifications
+- [x] Calendar integration
+- [x] Advanced analytics
 - [x] Dark mode
-- [ ] Biometric authentication
-- [ ] Biometric authentication
+- [x] Web/Mobile Parity
 
 ---
 
-**Built with ❤️ using React Native, Node.js, and MongoDB**
+**Built with ❤️ using React Native and JS, Node.js, and MongoDB**

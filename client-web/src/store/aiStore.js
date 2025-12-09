@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import safeStorage from '../utils/safeStorage';
 
 const useAiStore = create(
     persist(
@@ -89,7 +90,7 @@ const useAiStore = create(
         }),
         {
             name: 'ai-storage',
-            storage: createJSONStorage(() => localStorage), // Use localStorage for web
+            storage: createJSONStorage(() => safeStorage), // Use safeStorage for web persistence
         }
     )
 );

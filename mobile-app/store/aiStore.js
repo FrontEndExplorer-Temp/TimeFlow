@@ -59,6 +59,21 @@ const useAiStore = create(
                 }
             },
 
+            // Get finance insights
+            getFinanceInsights: async () => {
+                set({ isGenerating: true, error: null });
+                try {
+                    const response = await api.post('/ai/finance-insights');
+                    set({
+                        financeInsights: response.data,
+                        isGenerating: false,
+                        lastUpdated: new Date().toISOString()
+                    });
+                } catch (e) {
+                    set({ error: e.message, isGenerating: false });
+                }
+            },
+
             // Check if data is expired (not from today)
             checkExpiration: () => {
                 const { lastUpdated } = get();

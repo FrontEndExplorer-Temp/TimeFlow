@@ -3,14 +3,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect } from 'react';
 import useThemeStore from '../../store/themeStore';
 import useNotificationStore from '../../store/notificationStore';
+import useAuthStore from '../../store/authStore';
 
 export default function TabLayout() {
     const { theme } = useThemeStore();
-    const { initialize } = useNotificationStore();
+    const { initialize, hasInitialized } = useNotificationStore();
+    const { user } = useAuthStore();
 
     useEffect(() => {
-        initialize();
-    }, []);
+        // Only initialize notifications once per session and only if user is authenticated
+        if (user && !hasInitialized) {
+            initialize();
+        }
+    }, [user, hasInitialized]);
 
     return (
         <Tabs
@@ -73,6 +78,13 @@ export default function TabLayout() {
                 options={{
                     title: 'Habits',
                     tabBarIcon: ({ color }) => <Ionicons name="repeat-outline" size={24} color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="timer"
+                options={{
+                    title: 'Timer',
+                    tabBarIcon: ({ color }) => <Ionicons name="timer-outline" size={24} color={color} />,
                 }}
             />
             <Tabs.Screen

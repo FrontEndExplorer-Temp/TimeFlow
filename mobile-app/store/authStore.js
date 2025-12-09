@@ -30,9 +30,29 @@ const useAuthStore = create((set) => ({
     refreshUser: async () => {
         try {
             const response = await api.get('/users/profile');
-            const user = response.data;
-            await secureStorage.setItem('userInfo', JSON.stringify(user));
-            set({ user });
+            const remoteUser = response.data;
+
+            // Smart Merge: specific logic for onboardingCompleted
+            // If local says true, and remote says false, keep it true (and maybe sync)
+            set((state) => {
+                const localUser = state.user;
+                let mergedUser = { ...remoteUser };
+
+                if (localUser?.onboardingCompleted && !remoteUser.onboardingCompleted) {
+                    // Difference detected: Local is ahead. Keep local truth.
+                    mergedUser.onboardingCompleted = true;
+                    mergedUser.profilePicture = localUser.profilePicture || remoteUser.profilePicture; // Also try to keep avatar if we have one locally
+
+                    // Self-healing: Try to update backend again in background
+                    api.put('/users/profile', {
+                        onboardingCompleted: true,
+                        profilePicture: mergedUser.profilePicture
+                    }).catch(err => console.log('Background sync failed', err));
+                }
+
+                secureStorage.setItem('userInfo', JSON.stringify(mergedUser));
+                return { user: mergedUser };
+            });
         } catch (error) {
             console.error('Failed to refresh user', error);
         }
@@ -48,7 +68,7 @@ const useAuthStore = create((set) => ({
             await secureStorage.setItem('userInfo', JSON.stringify(user));
 
             set({ token, user, isLoading: false, isAuthenticated: true });
-            router.replace('/(tabs)');
+            // Navigation handled by _layout.js to prevent race conditions
         } catch (error) {
             set({
                 isLoading: false,
@@ -81,8 +101,10 @@ const useAuthStore = create((set) => ({
             const response = await api.put('/users/profile', userData);
             const { token, ...user } = response.data;
 
-            // Merge the updated data to ensure profilePicture and gender are saved
-            const updatedUser = { ...user, ...userData };
+            // CRITICAL: Force merge to ensure fields like onboardingCompleted are preserved
+            // Get current user state to prevent data loss
+            const currentUser = useAuthStore.getState().user;
+            const updatedUser = { ...currentUser, ...user, ...userData };
 
             await secureStorage.setItem('userToken', token);
             await secureStorage.setItem('userInfo', JSON.stringify(updatedUser));
@@ -96,6 +118,15 @@ const useAuthStore = create((set) => ({
             });
             return false;
         }
+    },
+
+    completeOnboardingLocally: async (updates = {}) => {
+        set((state) => {
+            if (!state.user) return state;
+            const updatedUser = { ...state.user, ...updates, onboardingCompleted: true };
+            secureStorage.setItem('userInfo', JSON.stringify(updatedUser)); // Persist locally
+            return { user: updatedUser };
+        });
     },
 
     verifyEmail: async (token) => {
@@ -160,7 +191,7 @@ const useAuthStore = create((set) => ({
 
             await secureStorage.setItem('userInfo', JSON.stringify(user));
             set({ token, user, isLoading: false, isAuthenticated: true });
-            router.replace('/(tabs)');
+            // Navigation handled by _layout.js to ensure proper onboarding flow
         } catch (error) {
             console.error('OAuth login error:', error);
             set({ isLoading: false, error: 'OAuth login failed', isAuthenticated: false });

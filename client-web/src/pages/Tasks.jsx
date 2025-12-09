@@ -3,6 +3,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import useTaskStore from '../store/taskStore';
 import TaskCard from '../components/tasks/TaskCard';
+import TaskCalendar from '../components/tasks/TaskCalendar'; // New import
 import TaskStats from '../components/tasks/TaskStats';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -13,6 +14,7 @@ import { cn } from '../utils/cn';
 const Tasks = () => {
     const { tasks, fetchTasks, addTask, updateTask, isLoading } = useTaskStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [view, setView] = useState('board'); // 'board' | 'calendar'
     const [isAIModalOpen, setIsAIModalOpen] = useState(false);
     const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
 
@@ -67,7 +69,6 @@ const Tasks = () => {
             description: task.description,
             priority: task.priority,
             dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
-            category: task.category
         });
         setIsModalOpen(true);
     };
@@ -77,7 +78,7 @@ const Tasks = () => {
         setEditingTask(null);
         setTags([]);
         setSubtasks([]);
-        reset({ title: '', description: '', priority: 'Medium', dueDate: '', category: '' });
+        reset({ title: '', description: '', priority: 'Medium', dueDate: '' });
     };
 
     const onSubmit = async (data) => {
@@ -85,7 +86,7 @@ const Tasks = () => {
             ...data,
             tags,
             subtasks,
-            status: editingTask ? editingTask.status : 'backlog',
+            status: editingTask ? editingTask.status : 'Backlog',
         };
 
         let success;
@@ -117,7 +118,7 @@ const Tasks = () => {
                 </div>
                 <Button onClick={() => {
                     setEditingTask(null);
-                    reset({ title: '', description: '', priority: 'Medium', dueDate: '', category: '' });
+                    reset({ title: '', description: '', priority: 'Medium', dueDate: '' });
                     setTags([]);
                     setSubtasks([]);
                     setIsModalOpen(true);
@@ -130,39 +131,71 @@ const Tasks = () => {
             {/* Stats */}
             <TaskStats tasks={tasks} />
 
-            {/* Kanban Board */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                {columns.map((column) => (
-                    <div key={column.id} className="flex flex-col">
-                        {/* Column Header */}
-                        <div className={cn("rounded-lg p-3 mb-3", column.color)}>
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-medium text-sm text-gray-700 dark:text-gray-300">{column.label}</h3>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {tasks.filter(t => t.status === column.id).length}
-                                </span>
+            {/* Controls Row */}
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                    <button
+                        onClick={() => setView('board')}
+                        className={cn(
+                            "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                            view === 'board'
+                                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        )}
+                    >
+                        Board
+                    </button>
+                    <button
+                        onClick={() => setView('calendar')}
+                        className={cn(
+                            "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                            view === 'calendar'
+                                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        )}
+                    >
+                        Calendar
+                    </button>
+                </div>
+            </div>
+
+            {/* Content View */}
+            {view === 'board' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    {columns.map((column) => (
+                        <div key={column.id} className="flex flex-col">
+                            {/* Column Header */}
+                            <div className={cn("rounded-lg p-3 mb-3", column.color)}>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-medium text-sm text-gray-700 dark:text-gray-300">{column.label}</h3>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {tasks.filter(t => t.status === column.id).length}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Cards */}
+                            <div className="space-y-3 flex-1">
+                                {tasks.filter(t => t.status === column.id).map((task) => (
+                                    <TaskCard
+                                        key={task._id}
+                                        task={task}
+                                        onEdit={() => handleEditTask(task)}
+                                    />
+                                ))}
+
+                                {tasks.filter(t => t.status === column.id).length === 0 && (
+                                    <div className="text-center py-8 text-sm text-gray-400">
+                                        No tasks
+                                    </div>
+                                )}
                             </div>
                         </div>
-
-                        {/* Cards */}
-                        <div className="space-y-3 flex-1">
-                            {tasks.filter(t => t.status === column.id).map((task) => (
-                                <TaskCard
-                                    key={task._id}
-                                    task={task}
-                                    onEdit={() => handleEditTask(task)}
-                                />
-                            ))}
-
-                            {tasks.filter(t => t.status === column.id).length === 0 && (
-                                <div className="text-center py-8 text-sm text-gray-400">
-                                    No tasks
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <TaskCalendar tasks={tasks} onEdit={handleEditTask} />
+            )}
 
             {/* Modal - Same as before */}
             <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingTask ? "Edit Task" : "Create Task"}>
@@ -183,7 +216,6 @@ const Tasks = () => {
                         </div>
                         <Input label="Due Date" type="date" {...register('dueDate')} />
                     </div>
-                    <Input label="Category" placeholder="e.g., Work" {...register('category')} />
 
                     {/* Tags */}
                     <div>

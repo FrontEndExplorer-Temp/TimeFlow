@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Animated, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../store/authStore';
 import useThemeStore from '../../store/themeStore';
 import api from '../../services/api';
 import Badges from '../../components/Badges';
+import AIKeyManager from '../../components/AIKeyManager';
 
 const ProfileSkeleton = () => {
     const { isDarkMode } = useThemeStore();
@@ -17,12 +18,12 @@ const ProfileSkeleton = () => {
                 Animated.timing(pulseAnim, {
                     toValue: 1,
                     duration: 1000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(pulseAnim, {
                     toValue: 0,
                     duration: 1000,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();
@@ -69,6 +70,7 @@ export default function ProfileScreen() {
         streak: 0
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [isKeyManagerVisible, setKeyManagerVisible] = useState(false);
 
     useEffect(() => {
         fetchStats();
@@ -140,125 +142,137 @@ export default function ProfileScreen() {
     };
 
     return (
-        <ScrollView style={[styles.container, themeStyles.container]}>
-            {/* Header Section */}
-            <View style={[styles.header, themeStyles.header]}>
-                <View style={styles.avatarContainer}>
-                    <Image
-                        source={{
-                            uri: user?.profilePicture || `https://api.dicebear.com/7.x/avataaars/png?seed=${user?.name || 'User'}&size=200&backgroundColor=${user?.gender === 'female' ? 'ffd5dc' : 'b6e3f4'}`
-                        }}
-                        style={styles.avatarImage}
-                    />
-                </View>
-                <Text style={[styles.userName, themeStyles.text]}>{user?.name || 'User Name'}</Text>
-                <Text style={[styles.userEmail, themeStyles.subText]}>{user?.email || 'user@example.com'}</Text>
+        <View style={[styles.container, themeStyles.container]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header Section */}
+                <View style={[styles.header, themeStyles.header]}>
+                    <View style={styles.avatarContainer}>
+                        <Image
+                            source={{
+                                uri: user?.profilePicture || `https://api.dicebear.com/7.x/avataaars/png?seed=${user?.name || 'User'}&size=200&backgroundColor=${user?.gender === 'female' ? 'ffd5dc' : 'b6e3f4'}`
+                            }}
+                            style={styles.avatarImage}
+                        />
+                    </View>
+                    <Text style={[styles.userName, themeStyles.text]}>{user?.name || 'User Name'}</Text>
+                    <Text style={[styles.userEmail, themeStyles.subText]}>{user?.email || 'user@example.com'}</Text>
 
-                <View style={styles.levelContainer}>
-                    <Text style={[styles.levelText, { color: themeStyles.text.color }]}>Level {user?.level || 1}</Text>
-                    <View style={styles.xpBarContainer}>
-                        <View style={[styles.xpBarFill, { width: `${(user?.xp || 0) % 100}%` }]} />
-                    </View>
-                    <Text style={[styles.xpText, { color: themeStyles.subText.color }]}>{(user?.xp || 0) % 100} / 100 XP</Text>
-                </View>
-            </View>
-
-            {/* Stats Section */}
-            {isLoading ? (
-                <ProfileSkeleton />
-            ) : (
-                <View style={[styles.statsContainer, themeStyles.card]}>
-                    <View style={styles.statItem}>
-                        <View style={[styles.statIconContainer, { backgroundColor: '#4A90E215' }]}>
-                            <Ionicons name="time-outline" size={24} color="#4A90E2" />
+                    <View style={styles.levelContainer}>
+                        <Text style={[styles.levelText, { color: themeStyles.text.color }]}>Level {user?.level || 1}</Text>
+                        <View style={styles.xpBarContainer}>
+                            <View style={[styles.xpBarFill, { width: `${(user?.xp || 0) % 100}%` }]} />
                         </View>
-                        <Text style={[styles.statNumber, themeStyles.text]}>{stats.totalHours}</Text>
-                        <Text style={[styles.statLabel, themeStyles.subText]}>Hours</Text>
-                    </View>
-                    <View style={[styles.statDivider, { backgroundColor: isDarkMode ? '#333' : '#eee' }]} />
-                    <View style={styles.statItem}>
-                        <View style={[styles.statIconContainer, { backgroundColor: '#34C75915' }]}>
-                            <Ionicons name="checkmark-circle-outline" size={24} color="#34C759" />
-                        </View>
-                        <Text style={[styles.statNumber, themeStyles.text]}>{stats.completedTasks}</Text>
-                        <Text style={[styles.statLabel, themeStyles.subText]}>Tasks</Text>
-                    </View>
-                    <View style={[styles.statDivider, { backgroundColor: isDarkMode ? '#333' : '#eee' }]} />
-                    <View style={styles.statItem}>
-                        <View style={[styles.statIconContainer, { backgroundColor: '#FF950015' }]}>
-                            <Ionicons name="flame-outline" size={24} color="#FF9500" />
-                        </View>
-                        <Text style={[styles.statNumber, themeStyles.text]}>{stats.streak}</Text>
-                        <Text style={[styles.statLabel, themeStyles.subText]}>Streak</Text>
+                        <Text style={[styles.xpText, { color: themeStyles.subText.color }]}>{(user?.xp || 0) % 100} / 100 XP</Text>
                     </View>
                 </View>
-            )}
 
-            <Badges userBadges={user?.badges} />
-
-            {/* Dashboard Section */}
-            <View style={styles.menuContainer}>
-                <Text style={[styles.sectionTitle, themeStyles.subText]}>Activity</Text>
-
-                <MenuOption
-                    icon="stats-chart-outline"
-                    title="Dashboard"
-                    subtitle="View your activity history"
-                    onPress={() => router.push('/profile/dashboard')}
-                    color="#4A90E2"
-                />
-            </View>
-
-            {/* Menu Section */}
-            <View style={styles.menuContainer}>
-                <Text style={[styles.sectionTitle, themeStyles.subText]}>Settings</Text>
-
-                <MenuOption
-                    icon="person-outline"
-                    title="Edit Profile"
-                    subtitle="Update your personal information"
-                    onPress={() => router.push('/profile/edit')}
-                    color="#5856D6"
-                />
-
-                <MenuOption
-                    icon="notifications-outline"
-                    title="Notifications"
-                    subtitle="Manage app notifications"
-                    onPress={() => router.push('/notifications')}
-                    color="#FF9500"
-                />
-
-                <MenuOption
-                    icon={isDarkMode ? "sunny-outline" : "moon-outline"}
-                    title={isDarkMode ? "Light Mode" : "Dark Mode"}
-                    subtitle="Toggle app theme"
-                    onPress={() => useThemeStore.getState().toggleTheme()}
-                    color="#AF52DE"
-                />
-
-                {user?.isAdmin && (
-                    <MenuOption
-                        icon="shield-checkmark-outline"
-                        title="Admin Dashboard"
-                        subtitle="Manage users and content"
-                        onPress={() => router.push('/admin/dashboard')}
-                        color="#FF3B30"
-                    />
+                {/* Stats Section */}
+                {isLoading ? (
+                    <ProfileSkeleton />
+                ) : (
+                    <View style={[styles.statsContainer, themeStyles.card]}>
+                        <View style={styles.statItem}>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#4A90E215' }]}>
+                                <Ionicons name="time-outline" size={24} color="#4A90E2" />
+                            </View>
+                            <Text style={[styles.statNumber, themeStyles.text]}>{stats.totalHours}</Text>
+                            <Text style={[styles.statLabel, themeStyles.subText]}>Hours</Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: isDarkMode ? '#333' : '#eee' }]} />
+                        <View style={styles.statItem}>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#34C75915' }]}>
+                                <Ionicons name="checkmark-circle-outline" size={24} color="#34C759" />
+                            </View>
+                            <Text style={[styles.statNumber, themeStyles.text]}>{stats.completedTasks}</Text>
+                            <Text style={[styles.statLabel, themeStyles.subText]}>Tasks</Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: isDarkMode ? '#333' : '#eee' }]} />
+                        <View style={styles.statItem}>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#FF950015' }]}>
+                                <Ionicons name="flame-outline" size={24} color="#FF9500" />
+                            </View>
+                            <Text style={[styles.statNumber, themeStyles.text]}>{stats.streak}</Text>
+                            <Text style={[styles.statLabel, themeStyles.subText]}>Streak</Text>
+                        </View>
+                    </View>
                 )}
 
-                <Text style={[styles.sectionTitle, { marginTop: 20 }, themeStyles.subText]}>Account</Text>
+                <Badges userBadges={user?.badges} />
 
-                <MenuOption
-                    icon="log-out-outline"
-                    title="Logout"
-                    onPress={handleLogout}
-                    color="#FF3B30"
-                />
-            </View>
+                {/* Dashboard Section */}
+                <View style={styles.menuContainer}>
+                    <Text style={[styles.sectionTitle, themeStyles.subText]}>Activity</Text>
 
-            <Text style={[styles.versionText, themeStyles.subText]}>Version 1.2.0</Text>
-        </ScrollView >
+                    <MenuOption
+                        icon="stats-chart-outline"
+                        title="Dashboard"
+                        subtitle="View your activity history"
+                        onPress={() => router.push('/profile/dashboard')}
+                        color="#4A90E2"
+                    />
+                </View>
+
+                {/* Menu Section */}
+                <View style={styles.menuContainer}>
+                    <Text style={[styles.sectionTitle, themeStyles.subText]}>Settings</Text>
+
+                    <MenuOption
+                        icon="person-outline"
+                        title="Edit Profile"
+                        subtitle="Update your personal information"
+                        onPress={() => router.push('/profile/edit')}
+                        color="#5856D6"
+                    />
+
+                    <MenuOption
+                        icon="notifications-outline"
+                        title="Notifications"
+                        subtitle="Manage app notifications"
+                        onPress={() => router.push('/notifications')}
+                        color="#FF9500"
+                    />
+
+                    <MenuOption
+                        icon={isDarkMode ? "sunny-outline" : "moon-outline"}
+                        title={isDarkMode ? "Light Mode" : "Dark Mode"}
+                        subtitle="Toggle app theme"
+                        onPress={() => useThemeStore.getState().toggleTheme()}
+                        color="#AF52DE"
+                    />
+
+                    <MenuOption
+                        icon="key-outline"
+                        title="AI Configuration"
+                        subtitle="Manage API keys"
+                        onPress={() => setKeyManagerVisible(true)}
+                        color="#34C759"
+                    />
+
+                    {user?.isAdmin && (
+                        <MenuOption
+                            icon="shield-checkmark-outline"
+                            title="Admin Dashboard"
+                            subtitle="Manage users and content"
+                            onPress={() => router.push('/admin/dashboard')}
+                            color="#FF3B30"
+                        />
+                    )}
+
+                    <Text style={[styles.sectionTitle, { marginTop: 20 }, themeStyles.subText]}>Account</Text>
+
+                    <MenuOption
+                        icon="log-out-outline"
+                        title="Logout"
+                        onPress={handleLogout}
+                        color="#FF3B30"
+                    />
+                </View>
+
+                <Text style={[styles.versionText, themeStyles.subText]}>Version 1.3.0</Text>
+            </ScrollView>
+
+            <AIKeyManager visible={isKeyManagerVisible} onClose={() => setKeyManagerVisible(false)} />
+        </View>
     );
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import useFinanceStore from '../store/financeStore';
@@ -8,6 +8,7 @@ import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import { cn } from '../utils/cn';
 import { format } from 'date-fns';
+import AIFinanceCard from '../components/finance/AIFinanceCard';
 
 const Finance = () => {
     const {
@@ -18,6 +19,8 @@ const Finance = () => {
         fetchBudgets,
         fetchMonthlyStats,
         addTransaction,
+        updateTransaction,
+        deleteTransaction,
         setBudget,
         deleteBudget,
         isLoading
@@ -26,7 +29,9 @@ const Finance = () => {
     const [activeTab, setActiveTab] = useState('transactions');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-    const { register, handleSubmit, reset, formState: { errors } } = useForm();
+    const [editingTransaction, setEditingTransaction] = useState(null);
+
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
     const {
         register: registerBudget,
         handleSubmit: handleSubmitBudget,
@@ -42,11 +47,39 @@ const Finance = () => {
         fetchMonthlyStats(monthStr);
     }, [fetchTransactions, fetchBudgets, fetchMonthlyStats]);
 
+    const handleEditTransaction = (transaction) => {
+        setEditingTransaction(transaction);
+        setValue('type', transaction.type);
+        setValue('amount', transaction.amount);
+        setValue('paymentMethod', transaction.paymentMethod || 'Cash');
+        setValue('category', transaction.category);
+        setValue('date', new Date(transaction.date).toISOString().split('T')[0]);
+        setValue('description', transaction.description);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingTransaction(null);
+        reset();
+    };
+
     const onSubmit = async (data) => {
-        const success = await addTransaction(data);
+        let success;
+        if (editingTransaction) {
+            success = await updateTransaction(editingTransaction._id, {
+                ...data,
+                amount: parseFloat(data.amount)
+            });
+        } else {
+            success = await addTransaction({
+                ...data,
+                amount: parseFloat(data.amount)
+            });
+        }
+
         if (success) {
-            setIsModalOpen(false);
-            reset();
+            handleCloseModal();
         }
     };
 
@@ -94,7 +127,15 @@ const Finance = () => {
                     <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Finance</h1>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Track your income and expenses</p>
                 </div>
-                <Button onClick={() => activeTab === 'transactions' ? setIsModalOpen(true) : setIsBudgetModalOpen(true)}>
+                <Button onClick={() => {
+                    if (activeTab === 'transactions') {
+                        setEditingTransaction(null);
+                        reset();
+                        setIsModalOpen(true);
+                    } else {
+                        setIsBudgetModalOpen(true);
+                    }
+                }}>
                     <Plus className="w-4 h-4 mr-2" />
                     {activeTab === 'transactions' ? 'New Transaction' : 'New Budget'}
                 </Button>
@@ -172,8 +213,65 @@ const Finance = () => {
 
             {activeTab === 'transactions' ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Chart */}
-                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                    {/* Main Content Area */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* AI Card */}
+                        <AIFinanceCard />
+
+                        {/* Recent Transactions List (Full) */}
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Transactions</h2>
+                            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                                {transactions.length === 0 ? (
+                                    <p className="text-center text-gray-500 dark:text-gray-400 py-4">No transactions yet.</p>
+                                ) : (
+                                    transactions.map((t) => (
+                                        <div key={t._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                                            <div className="flex items-center space-x-3">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-full flex items-center justify-center",
+                                                    t.type === 'Income'
+                                                        ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                                                        : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                                )}>
+                                                    {t.type === 'Income' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t.category}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(t.date), 'MMM d, yyyy')} • {t.paymentMethod}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className={cn(
+                                                    "font-medium",
+                                                    t.type === 'Income' ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                                )}>
+                                                    {t.type === 'Income' ? '+' : '-'}${t.amount}
+                                                </span>
+                                                <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => handleEditTransaction(t)}
+                                                        className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 pointer-events-auto"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteTransaction(t._id)}
+                                                        className="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 pointer-events-auto"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sidebar Chart */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-fit">
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Overview</h2>
                         <div className="h-64">
                             <ResponsiveContainer width="100%" height="100%">
@@ -187,41 +285,6 @@ const Finance = () => {
                                     <Bar dataKey="amount" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={50} />
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Recent Transactions */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Recent Transactions</h2>
-                        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                            {transactions.length === 0 ? (
-                                <p className="text-center text-gray-500 dark:text-gray-400 py-4">No transactions yet.</p>
-                            ) : (
-                                transactions.slice(0, 5).map((t) => (
-                                    <div key={t._id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <div className="flex items-center space-x-3">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-full flex items-center justify-center",
-                                                t.type === 'Income'
-                                                    ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                                                    : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                                            )}>
-                                                {t.type === 'Income' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">{t.category}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(t.date), 'MMM d')}</p>
-                                            </div>
-                                        </div>
-                                        <span className={cn(
-                                            "font-medium",
-                                            t.type === 'Income' ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                                        )}>
-                                            {t.type === 'Income' ? '+' : '-'}${t.amount}
-                                        </span>
-                                    </div>
-                                ))
-                            )}
                         </div>
                     </div>
                 </div>
@@ -248,7 +311,7 @@ const Finance = () => {
                                             onClick={() => deleteBudget(budget._id)}
                                             className="text-gray-400 hover:text-red-500 transition-colors"
                                         >
-                                            <span className="text-xl">×</span>
+                                            <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
 
@@ -272,11 +335,11 @@ const Finance = () => {
                 </div>
             )}
 
-            {/* Add Transaction Modal */}
+            {/* Transaction Modal */}
             <Modal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title="Add Transaction"
+                onClose={handleCloseModal}
+                title={editingTransaction ? "Edit Transaction" : "Add Transaction"}
             >
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -303,6 +366,22 @@ const Finance = () => {
                         />
                     </div>
 
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Payment Method
+                        </label>
+                        <select
+                            {...register('paymentMethod', { required: 'Required' })}
+                            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        >
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
                     <Input
                         label="Category"
                         placeholder="e.g., Food, Salary, Rent"
@@ -325,11 +404,11 @@ const Finance = () => {
                     />
 
                     <div className="flex justify-end space-x-3 pt-4">
-                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
+                        <Button type="button" variant="ghost" onClick={handleCloseModal}>
                             Cancel
                         </Button>
                         <Button type="submit" isLoading={isLoading}>
-                            Add Transaction
+                            {editingTransaction ? 'Save Changes' : 'Add Transaction'}
                         </Button>
                     </div>
                 </form>

@@ -7,7 +7,34 @@ import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import JobStats from '../components/jobs/JobStats';
 import JobCard from '../components/jobs/JobCard';
+import InterviewPrepModal from '../components/InterviewPrepModal';
 import { cn } from '../utils/cn';
+
+const JobSkeleton = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 animate-pulse">
+        <div className="mb-3">
+            <div className="flex justify-between items-start mb-2">
+                <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </div>
+                <div className="flex gap-1">
+                    <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+            </div>
+            <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+        </div>
+        <div className="flex gap-2 mb-3">
+            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+        <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between">
+            <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+    </div>
+);
 
 const Jobs = () => {
     const { jobs, fetchJobs, addJob, updateJob, deleteJob, getInterviewPrep, isLoading } = useJobStore();
@@ -30,6 +57,7 @@ const Jobs = () => {
         setValue('link', job.link);
         setValue('status', job.status);
         setValue('skills', job.skills);
+        setValue('notes', job.notes);
         setIsModalOpen(true);
     };
 
@@ -116,6 +144,13 @@ const Jobs = () => {
                                 />
                             ))}
 
+                            {isLoading && jobs.length === 0 && (
+                                <>
+                                    <JobSkeleton />
+                                    <JobSkeleton />
+                                </>
+                            )}
+
                             {jobs.filter(j => j.status === column.id).length === 0 && (
                                 <div className="text-center py-8 text-sm text-gray-400">
                                     No jobs
@@ -134,6 +169,10 @@ const Jobs = () => {
                     <Input label="Skills" placeholder="e.g. React, Node.js" {...register('skills')} />
                     <Input label="Location" placeholder="e.g. Remote, NY" {...register('location')} />
                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                        <textarea {...register('notes')} rows={3} className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white" placeholder="Add notes..." />
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                         <select {...register('status')} className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm dark:text-white">
                             {columns.map(c => (<option key={c.id} value={c.id}>{c.label}</option>))}
@@ -147,39 +186,12 @@ const Jobs = () => {
             </Modal>
 
             {/* Interview Prep Modal */}
-            <Modal isOpen={isPrepModalOpen} onClose={() => setIsPrepModalOpen(false)} title="Interview Prep">
-                {prepLoading ? (
-                    <div className="flex justify-center p-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    </div>
-                ) : prepData ? (
-                    <div className="space-y-6 max-h-[60vh] overflow-y-auto">
-                        <div>
-                            <h3 className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2">Technical Questions</h3>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {prepData.technical.map((q, i) => (<li key={i}>{q}</li>))}
-                            </ul>
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">Behavioral Questions</h3>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {prepData.behavioral.map((q, i) => (<li key={i}>{q}</li>))}
-                            </ul>
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">Questions to Ask</h3>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {prepData.questionsToAsk.map((q, i) => (<li key={i}>{q}</li>))}
-                            </ul>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-center p-4 text-sm text-gray-500">No prep data available.</div>
-                )}
-                <div className="flex justify-end pt-4">
-                    <Button onClick={() => setIsPrepModalOpen(false)}>Close</Button>
-                </div>
-            </Modal>
+            <InterviewPrepModal
+                isOpen={isPrepModalOpen}
+                onClose={() => setIsPrepModalOpen(false)}
+                prepData={prepData}
+                loading={prepLoading}
+            />
         </div>
     );
 };

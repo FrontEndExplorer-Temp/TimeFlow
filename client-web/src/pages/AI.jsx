@@ -4,31 +4,64 @@ import ReactMarkdown from 'react-markdown';
 import useAiStore from '../store/aiStore';
 import Button from '../components/ui/Button';
 
-const AICard = ({ title, icon: Icon, onGenerate, data, isLoading, children }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+const AISkeleton = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col animate-pulse">
         <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-                    <Icon className="w-5 h-5" />
-                </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+            <div className="flex items-center space-x-3 w-full">
+                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
             </div>
-            <Button size="sm" onClick={onGenerate} isLoading={isLoading} variant="outline">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate
-            </Button>
+            <div className="w-24 h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </div>
-        <div className="flex-1 overflow-y-auto min-h-[200px] text-sm text-gray-600 dark:text-gray-300 prose dark:prose-invert max-w-none">
-            {data ? (
-                typeof data === 'string' ? <ReactMarkdown>{data}</ReactMarkdown> : children
-            ) : (
-                <div className="flex items-center justify-center h-full text-gray-400 text-xs italic">
-                    Click generate to get AI insights
-                </div>
-            )}
+        <div className="flex-1 space-y-3">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
         </div>
     </div>
 );
+
+
+
+const AICardContent = ({ data, children, isLoading }) => {
+    if (isLoading && !data) return <AISkeleton />;
+    if (!data) return (
+        <div className="flex items-center justify-center h-full text-gray-400 text-xs italic">
+            Click generate to get AI insights
+        </div>
+    );
+    return typeof data === 'string' ? <ReactMarkdown>{data}</ReactMarkdown> : children;
+};
+
+const AICard = ({ title, icon: Icon, onGenerate, data, isLoading, children }) => {
+    if (isLoading && !data) return <AISkeleton />;
+
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                        <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+                </div>
+                <Button size="sm" onClick={onGenerate} isLoading={isLoading} variant="outline">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate
+                </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-[200px] text-sm text-gray-600 dark:text-gray-300 prose dark:prose-invert max-w-none">
+                {typeof data === 'string' ? <ReactMarkdown>{data}</ReactMarkdown> : (children || data)}
+                {!data && (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-xs italic">
+                        Click generate to get AI insights
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const AI = () => {
     const {
