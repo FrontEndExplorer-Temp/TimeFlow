@@ -5,13 +5,13 @@ import { addKey, getKeys, deleteKey, resetKey } from '../controllers/aiKeyContro
 const router = express.Router();
 
 router.route('/')
-    .post(protect, admin, addKey)
-    .get(protect, admin, getKeys);
+    .post(protect, addKey)
+    .get(protect, getKeys);
 
 router.route('/:id')
-    .delete(protect, admin, deleteKey);
+    .delete(protect, deleteKey);
 
 router.route('/:id/reset')
-    .put(protect, admin, resetKey);
+    .put(protect, resetKey);
 
 export default router;
