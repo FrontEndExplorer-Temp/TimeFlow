@@ -17,6 +17,7 @@
     "expo": "~54.0.27",
     "expo-constants": "~18.0.10",
     "expo-device": "~8.0.10",
+    "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.10",
     "expo-notifications": "~0.32.14",
     "expo-router": "~6.0.17",
