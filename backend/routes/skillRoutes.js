@@ -217,6 +217,10 @@ router.post('/daily-plan', protect, async (req, res) => {
             status: 'practicing'
         });
 
+        if (learningSkills.length === 0 && practicingSkills.length === 0) {
+            return res.json({ message: 'No skills found. Add some skills to generate a daily plan!', totalTasks: 0, tasks: [] });
+        }
+
         const context = {
             roadmapLearningSkills: learningSkills.map(s => ({
                 name: s.name,

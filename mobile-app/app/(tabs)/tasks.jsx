@@ -102,7 +102,10 @@ export default function TasksScreen() {
         });
 
     const handleSaveTask = async () => {
-        if (!formData.title.trim()) return;
+        if (!formData.title.trim()) {
+            Alert.alert('Error', 'Please enter a task title');
+            return;
+        }
 
         const taskData = {
             ...formData,

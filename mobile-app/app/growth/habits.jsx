@@ -133,7 +133,10 @@ export default function HabitsScreen() {
     };
 
     const handleSaveHabit = async () => {
-        if (!formData.name.trim()) return;
+        if (!formData.name.trim()) {
+            Alert.alert('Error', 'Please enter a habit name');
+            return;
+        }
 
         const habitData = {
             ...formData,

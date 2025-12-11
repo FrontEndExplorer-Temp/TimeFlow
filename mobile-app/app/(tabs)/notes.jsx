@@ -61,7 +61,10 @@ export default function NotesScreen() {
     }, []);
 
     const handleSaveNote = async () => {
-        if (!formData.title.trim() || !formData.content.trim()) return;
+        if (!formData.title.trim() || !formData.content.trim()) {
+            Alert.alert('Error', 'Please enter a title and content for the note');
+            return;
+        }
 
         // Ensure we store the "base" color (Light Mode version) if possible, 
         // or just store what is selected. 
